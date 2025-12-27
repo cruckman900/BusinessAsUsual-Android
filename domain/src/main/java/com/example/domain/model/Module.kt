@@ -4,5 +4,5 @@ data class Module(
     val id: String,
     val name: String,
     val description: String,
-    val iconRes: Int // Android drawable resource ID
+    val icon: ModuleIcon // Android drawable resource ID
 )
