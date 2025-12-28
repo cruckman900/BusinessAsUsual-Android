@@ -1,12 +1,11 @@
 package com.example.data.datasource
 
 import com.example.domain.model.Module
-import com.example.data.R
 import com.example.domain.model.ModuleIcon
 
-class FakeModuleDataSource {
+class FakeModuleDataSource : ModuleDataSource {
 
-    fun getModules(): List<Module> =
+    override fun getModules(): List<Module> =
         listOf(
             Module(
                 id = "hr",

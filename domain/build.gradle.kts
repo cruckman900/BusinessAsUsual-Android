@@ -5,10 +5,19 @@ plugins {
 
 android {
     namespace = "com.example.businessasusualandroid.domain"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 26
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
     }
 
     // Domain should not depend on Android UI
@@ -19,4 +28,8 @@ android {
 
 dependencies {
     // No Android UI dependencies here
+    dependencies {
+        implementation(libs.koin.core)
+        testImplementation(libs.junit)
+    }
 }

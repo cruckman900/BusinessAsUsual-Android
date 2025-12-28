@@ -2,9 +2,9 @@ package com.example.data.datasource
 
 import com.example.domain.model.HrAction
 
-class FakeHrDataSource {
+class FakeHrDataSource : HrDataSource {
 
-    fun getHrActions(): List<HrAction> =
+    override fun getHrActions(): List<HrAction> =
         listOf(
             HrAction(
                 id = "onboarding",
