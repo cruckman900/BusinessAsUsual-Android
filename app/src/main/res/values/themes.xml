@@ -1,5 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.BusinessAsUsualAndroid" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.BusinessAsUsualAndroid" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/bau_primary</item>
+        <item name="colorPrimaryDark">@color/bau_primary_dark</item>
+        <item name="colorAccent">@color/bau_accent</item>
+
+        <!-- Action Bar title color -->
+        <item name="android:textColorPrimary">@color/white</item>
+
+        <!-- Action Bar background -->
+        <item name="android:actionBarStyle">@style/BAU.ActionBar</item>
+    </style>
+
+    <style name="BAU.ActionBar" parent="@style/Widget.AppCompat.ActionBar">
+        <item name="background">@color/bau_primary</item>
+        <item name="titleTextStyle">@style/BAU.ActionBar.Title</item>
+        <item name="subtitleTextStyle">@style/BAU.ActionBar.Subtitle</item>
+
+        <!-- Add horizonal spacing between logo and title -->
+        <item name="contentInsetStartWithNavigation">16dp</item>
+        <item name="contentInsetLeft">16dp</item>
+    </style>
+
+    <style name="BAU.ActionBar.Title" parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="BAU.ActionBar.Subtitle" parent="@style/TextAppearance.AppCompat.Widget.ActionBar.Subtitle">
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <!-- FIXED SPLASH THEME -->
+    <style name="Theme.BAU.Splash" parent="Theme.BusinessAsUsualAndroid">
+        <item name="windowSplashScreenBackground">@color/black</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="windowSplashScreenAnimationDuration">300</item>
+
+        <!-- After splash, switch to real app theme -->
+        <item name="postSplashScreenTheme">@style/Theme.BusinessAsUsualAndroid</item>
+    </style>
+
 </resources>

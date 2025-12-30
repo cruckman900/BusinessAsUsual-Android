@@ -55,6 +55,10 @@ dependencies {
     implementation(project(":domain"))
     implementation(project(":data"))
 
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
+
     // Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
