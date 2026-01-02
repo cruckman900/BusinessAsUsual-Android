@@ -1,4 +1,7 @@
+![Business As Usual](https://img.shields.io/badge/Business_As_Usual-LinearDescent-0a84ff?style=for-the-badge&logo=briefcase)
+
 # Business As Usual — Mobile
+
 ![Android](https://img.shields.io/badge/Android-3ddc84?style=for-the-badge&logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-7f52ff?style=for-the-badge&logo=kotlin)
 
