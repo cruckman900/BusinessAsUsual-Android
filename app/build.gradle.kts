@@ -54,6 +54,9 @@ android {
 dependencies {
     implementation(project(":domain"))
     implementation(project(":data"))
+    implementation("io.insert-koin:koin-androidx-compose:3.5.6")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+    implementation("androidx.compose.material:material-icons-extended") // optional, better icon fidelity
 
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.compose.material:material-icons-extended")
