@@ -1,4 +1,18 @@
+![Business As Usual](https://img.shields.io/badge/Business_As_Usual-LinearDescent-0a84ff?style=for-the-badge&logo=briefcase)
+
 # Business As Usual — Mobile
+
+![Android](https://img.shields.io/badge/Android-3ddc84?style=for-the-badge&logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-7f52ff?style=for-the-badge&logo=kotlin)
+
+![Proprietary](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)
+
+![Hits](https://hits.sh/github.com/cruckman900/BusinessAsUsual-Android.svg?style=for-the-badge)
+![Stars](https://img.shields.io/github/stars/cruckman900/BusinessAsUsual-Android?style=for-the-badge)
+
+![Issues](https://img.shields.io/github/issues/cruckman900/BusinessAsUsual-Android?style=for-the-badge)
+![Last Commit](https://img.shields.io/github/last-commit/cruckman900/BusinessAsUsual-Android?style=for-the-badge)
+
 
 Native Android + iOS implementation of the BAU platform using:
 
