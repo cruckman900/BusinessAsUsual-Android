@@ -1,0 +1,27 @@
+﻿package work.businessasusual.ui.dashboard
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import work.businessasusual.domain.model.Module
+import work.businessasusual.domain.usecase.GetModulesUseCase
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+class DashboardViewModel(
+    private val getModulesUseCase: GetModulesUseCase
+) : ViewModel() {
+
+    private val _modules = MutableStateFlow<List<Module>>(emptyList())
+    val modules: StateFlow<List<Module>> = _modules
+
+    init {
+        loadModules()
+    }
+
+    private fun loadModules() {
+        viewModelScope.launch {
+            _modules.value = getModulesUseCase()
+        }
+    }
+}

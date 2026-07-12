@@ -1,99 +1,99 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+	alias(libs.plugins.android.application)
+	alias(libs.plugins.kotlin.android)
+	alias(libs.plugins.kotlin.compose)
 }
 android {
-    namespace = "com.example.businessasusualandroid"
-    compileSdk = 35
+	namespace = "work.businessasusual"
+	compileSdk = 35
 
-    defaultConfig {
-        applicationId = "com.example.businessasusualandroid"
-        minSdk = 26
-        targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+	defaultConfig {
+		applicationId = "work.businessasusual"
+		minSdk = 26
+		targetSdk = 35
+		versionCode = 1
+		versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables.useSupportLibrary = true
-    }
+		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+		vectorDrawables.useSupportLibrary = true
+	}
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
+	buildTypes {
+		release {
+			isMinifyEnabled = false
+			proguardFiles(
+				getDefaultProguardFile("proguard-android-optimize.txt"),
+				"proguard-rules.pro"
+			)
+		}
+	}
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
+	compileOptions {
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
+	}
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+	kotlinOptions {
+		jvmTarget = "17"
+	}
 
-    buildFeatures {
-        compose = true
-        viewBinding = true
-    }
+	buildFeatures {
+		compose = true
+		viewBinding = true
+	}
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
-    }
+	composeOptions {
+		kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
+	}
 
-    packaging {
-        resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
-    }
+	packaging {
+		resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+	}
 }
 
 dependencies {
-    implementation(project(":domain"))
-    implementation(project(":data"))
-    implementation("io.insert-koin:koin-androidx-compose:3.5.6")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-    implementation("androidx.compose.material:material-icons-extended") // optional, better icon fidelity
+	implementation(project(":domain"))
+	implementation(project(":data"))
+	implementation("io.insert-koin:koin-androidx-compose:3.5.6")
+	implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+	implementation("androidx.compose.material:material-icons-extended") // optional, better icon fidelity
 
-    implementation("androidx.core:core-splashscreen:1.0.1")
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
+	implementation("androidx.core:core-splashscreen:1.0.1")
+	implementation("androidx.compose.material:material-icons-extended")
+	implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
 
-    // Core
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
+	// Core
+	implementation(libs.androidx.core.ktx)
+	implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // Compose BOM
-    implementation(platform(libs.androidx.compose.bom))
+	// Compose BOM
+	implementation(platform(libs.androidx.compose.bom))
 
-    // Compose
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+	// Compose
+	implementation(libs.androidx.ui)
+	implementation(libs.androidx.ui.graphics)
+	implementation(libs.androidx.ui.tooling.preview)
+	implementation(libs.androidx.material3)
 
-    // Compose tooling
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+	// Compose tooling
+	debugImplementation(libs.androidx.ui.tooling)
+	debugImplementation(libs.androidx.ui.test.manifest)
 
-    // Activity + Lifecycle + Navigation
-    implementation(libs.activity.compose)
-    implementation(libs.lifecycle.viewmodel.compose)
-    implementation(libs.lifecycle.runtime.compose)
-    implementation(libs.navigation.compose)
+	// Activity + Lifecycle + Navigation
+	implementation(libs.activity.compose)
+	implementation(libs.lifecycle.viewmodel.compose)
+	implementation(libs.lifecycle.runtime.compose)
+	implementation(libs.navigation.compose)
 
-    // Koin
-    implementation(libs.koin.core)
-    implementation(libs.koin.android)
-    implementation(libs.koin.compose)
+	// Koin
+	implementation(libs.koin.core)
+	implementation(libs.koin.android)
+	implementation(libs.koin.compose)
 
-    // Tests
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
+	// Tests
+	testImplementation(libs.junit)
+	androidTestImplementation(libs.androidx.junit)
+	androidTestImplementation(libs.androidx.espresso.core)
+	androidTestImplementation(platform(libs.androidx.compose.bom))
+	androidTestImplementation(libs.androidx.ui.test.junit4)
 }
