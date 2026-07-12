@@ -140,7 +140,7 @@ private fun DynamicFilter(filter: Filter) {
 			readOnly = true,
 			label = { Text(filter.label) },
 			trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-			modifier = Modifier.menuAnchor().fillMaxWidth(),
+			modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
 		)
 		ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
 			filter.values.forEach { v ->
@@ -258,7 +258,7 @@ private fun DynamicFormField(
 					isError = error != null,
 					supportingText = { error?.let { Text(it) } },
 					trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-					modifier = Modifier.menuAnchor().fillMaxWidth(),
+					modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
 				)
 				ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
 					field.options.forEach { opt ->
