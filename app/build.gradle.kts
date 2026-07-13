@@ -33,17 +33,9 @@ android {
 		targetCompatibility = JavaVersion.VERSION_17
 	}
 
-	kotlinOptions {
-		jvmTarget = "17"
-	}
-
 	buildFeatures {
 		compose = true
 		viewBinding = true
-	}
-
-	composeOptions {
-		kotlinCompilerExtensionVersion = libs.versions.composeCompiler.get()
 	}
 
 	packaging {
@@ -51,20 +43,20 @@ android {
 	}
 }
 
+kotlin {
+	compilerOptions {
+		jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+	}
+}
+
 dependencies {
 	implementation(project(":domain"))
 	implementation(project(":data"))
-	implementation("io.insert-koin:koin-androidx-compose:3.5.6")
-	implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-	implementation("androidx.compose.material:material-icons-extended") // optional, better icon fidelity
-
-	implementation("androidx.core:core-splashscreen:1.0.1")
-	implementation("androidx.compose.material:material-icons-extended")
-	implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
 
 	// Core
 	implementation(libs.androidx.core.ktx)
 	implementation(libs.androidx.lifecycle.runtime.ktx)
+	implementation(libs.androidx.core.splashscreen)
 
 	// Compose BOM
 	implementation(platform(libs.androidx.compose.bom))
@@ -74,6 +66,7 @@ dependencies {
 	implementation(libs.androidx.ui.graphics)
 	implementation(libs.androidx.ui.tooling.preview)
 	implementation(libs.androidx.material3)
+	implementation(libs.androidx.material.icons.extended)
 
 	// Compose tooling
 	debugImplementation(libs.androidx.ui.tooling)
@@ -89,6 +82,9 @@ dependencies {
 	implementation(libs.koin.core)
 	implementation(libs.koin.android)
 	implementation(libs.koin.compose)
+
+	// Charts
+	implementation(libs.vico.compose.m3)
 
 	// Tests
 	testImplementation(libs.junit)

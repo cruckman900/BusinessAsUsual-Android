@@ -30,8 +30,34 @@ data class ScreenDto(
 	val sections: List<ScreenSectionDto> = emptyList(),
 	// form
 	val validation: ValidationRulesDto = ValidationRulesDto(),
+	// chart
+	val charts: List<ChartSpecDto> = emptyList(),
 	// shared
 	val actions: List<ActionButtonDto> = emptyList(),
+)
+
+@Serializable
+data class ChartSpecDto(
+	val id: String = "",
+	val title: String = "",
+	val subtitle: String? = null,
+	val chartType: String = "line",
+	val labels: List<String> = emptyList(),
+	val series: List<ChartSeriesDto> = emptyList(),
+)
+
+@Serializable
+data class ChartSeriesDto(
+	val name: String = "",
+	val color: String? = null,
+	val points: List<ChartDataPointDto> = emptyList(),
+)
+
+@Serializable
+data class ChartDataPointDto(
+	val label: String = "",
+	val value: Double = 0.0,
+	val color: String? = null,
 )
 
 /** Union section covering both detail and form sections. */

@@ -127,6 +127,39 @@ data class ScreenAction(
 	val confirmationMessage: String? = null,
 )
 
+// ---- Chart screen ----
+data class ChartScreenSpec(
+	val title: String,
+	val charts: List<ChartSpec>,
+	val emptyStateMessage: String,
+) : ScreenSpec
+
+data class ChartSpec(
+	val id: String,
+	val title: String,
+	val subtitle: String? = null,
+	val chartType: String,
+	val labels: List<String> = emptyList(),
+	val series: List<ChartSeries> = emptyList(),
+)
+
+data class ChartSeries(
+	val name: String,
+	val color: String? = null,
+	val points: List<ChartDataPoint> = emptyList(),
+)
+
+data class ChartDataPoint(
+	val label: String = "",
+	val value: Double,
+	val color: String? = null,
+)
+
+object ChartTypes {
+	const val LINE = "line"; const val BAR = "bar"; const val PIE = "pie"
+	const val DONUT = "donut"; const val SPARKLINE = "sparkline"
+}
+
 object ActionTypes {
 	const val NAVIGATE = "navigate"
 	const val API_CALL = "api-call"

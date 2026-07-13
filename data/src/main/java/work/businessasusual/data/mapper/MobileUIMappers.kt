@@ -24,8 +24,18 @@ fun ScreenDto.toDomain(): ScreenSpec? = when (type) {
 	"form" -> FormScreenSpec(
 		title, sections.map { it.toFormSection() }, actions.map { it.toDomain() }, validation.toDomain(),
 	)
+	"chart" -> ChartScreenSpec(
+		title, charts.map { it.toDomain() }, emptyStateMessage,
+	)
 	else -> null
 }
+
+fun ChartSpecDto.toDomain() = ChartSpec(
+	id = id, title = title, subtitle = subtitle, chartType = chartType,
+	labels = labels, series = series.map { it.toDomain() },
+)
+fun ChartSeriesDto.toDomain() = ChartSeries(name, color, points.map { it.toDomain() })
+fun ChartDataPointDto.toDomain() = ChartDataPoint(label, value, color)
 
 fun ScreenSectionDto.toDetailSection() =
 	DetailSection(id, title, fields.map { it.toDetailField() }, collapsible, defaultCollapsed)
