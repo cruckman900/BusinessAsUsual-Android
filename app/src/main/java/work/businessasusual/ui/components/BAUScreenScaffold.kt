@@ -43,11 +43,11 @@ fun BAUScreenScaffold(
 
     val onBreadcrumbNavigate: (Int) -> Unit = { index ->
         val target = breadcrumbs[index]
-        when (target) {
-            "Dashboard" -> onNavigate("dashboard")
-            "HR" -> onNavigate("module/hr")
-            "Finance" -> onNavigate("module/finance")
-            "CRM" -> onNavigate("module/crm")
+        when {
+            target == "Dashboard" -> onNavigate("dashboard")
+            // Second crumb is always the current module; navigate to its host route.
+            index == 1 -> onNavigate("module/${target.lowercase()}")
+            else -> onNavigate("module/${target.lowercase()}")
         }
     }
 

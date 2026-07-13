@@ -9,8 +9,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import work.businessasusual.domain.model.*
@@ -20,6 +23,7 @@ import org.koin.core.parameter.parametersOf
 @Composable
 fun MobileUiScreen(
 	moduleId: String,
+	onScreenTitleChange: (String?) -> Unit = {},
 	viewModel: MobileUiViewModel = koinViewModel { parametersOf(moduleId) },
 ) {
 	val state by viewModel.state.collectAsStateWithLifecycle()
@@ -44,6 +48,7 @@ fun MobileUiScreen(
 			module = s.module,
 			screenData = viewModel.screenData.collectAsStateWithLifecycle().value,
 			onScreenSelected = viewModel::loadScreenData,
+			onScreenTitleChange = onScreenTitleChange,
 		)
 	}
 }
@@ -53,6 +58,7 @@ private fun ModuleContent(
 	module: ModuleUi,
 	screenData: Map<String, List<Map<String, String>>>,
 	onScreenSelected: (String) -> Unit,
+	onScreenTitleChange: (String?) -> Unit = {},
 ) {
 	// Default to the first nav item's screen, falling back to the first available screen.
 	val defaultScreenKey = module.navigation.items.firstOrNull { module.screens.containsKey(it.screen) }?.screen
@@ -63,6 +69,13 @@ private fun ModuleContent(
 	LaunchedEffect(selectedScreen) {
 		val key = selectedScreen ?: return@LaunchedEffect
 		if (module.screens[key] is ListScreenSpec) onScreenSelected(key)
+	}
+
+	// Report the human-readable label of the current screen so the scaffold can
+	// render a deeper breadcrumb trail (Dashboard > Module > Screen).
+	LaunchedEffect(selectedScreen, module.moduleId) {
+		val label = module.navigation.items.firstOrNull { it.screen == selectedScreen }?.label
+		onScreenTitleChange(label)
 	}
 
 	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -93,9 +106,21 @@ private fun ModuleContent(
 			is ListScreenSpec -> DynamicListScreen(
 				spec = screen,
 				rows = screenData[selectedScreen].orEmpty(),
+				onAction = { action ->
+					// If the action targets another screen in this module, navigate to it
+					// in-place so View/Edit surface the detail/form contract screen.
+					val target = action.navigateTo
+						?.substringAfterLast('/')
+						?.takeIf { module.screens.containsKey(it) }
+					if (target != null) selectedScreen = target
+				},
 			)
 			is DetailScreenSpec -> DynamicDetailScreen(spec = screen)
 			is FormScreenSpec -> DynamicFormScreen(spec = screen)
+			is ChartScreenSpec -> ChartDashboard(
+				charts = screen.charts,
+				emptyMessage = screen.emptyStateMessage,
+			)
 			null -> Box(Modifier.fillMaxWidth().padding(24.dp), Alignment.Center) {
 				Text("No screen available for this section.", style = MaterialTheme.typography.bodyMedium)
 			}
@@ -137,26 +162,203 @@ fun DynamicListScreen(
 			}
 		}
 
-		Row(Modifier.fillMaxWidth()) {
-			spec.columns.forEach { col ->
-				Text(col.label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-			}
+		// Any action that isn't the list-level "add" is treated as a per-row action.
+		val rowActions = spec.actions.filter { it.id != "add" }
+
+		// Confirmation dialog state shared by all rows (for destructive/confirmable actions).
+		var pendingConfirm by remember { mutableStateOf<ScreenAction?>(null) }
+		pendingConfirm?.let { action ->
+			AlertDialog(
+				onDismissRequest = { pendingConfirm = null },
+				title = { Text(action.label) },
+				text = { Text(action.confirmationMessage ?: "Are you sure?") },
+				confirmButton = {
+					TextButton(onClick = { onAction(action); pendingConfirm = null }) { Text(action.label) }
+				},
+				dismissButton = {
+					TextButton(onClick = { pendingConfirm = null }) { Text("Cancel") }
+				},
+			)
 		}
-		HorizontalDivider()
+
+		val onRowAction: (ScreenAction) -> Unit = { action ->
+			if (action.requiresConfirmation) pendingConfirm = action else onAction(action)
+		}
 
 		if (rows.isEmpty()) {
 			Text(spec.emptyStateMessage, style = MaterialTheme.typography.bodyMedium)
+		} else if (shouldUseTable(spec.columns)) {
+			ListAsTable(spec.columns, rows, rowActions, onRowAction)
 		} else {
-			rows.forEach { row ->
-				Row(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-					spec.columns.forEach { col ->
-						Text(row[col.name].orEmpty(), modifier = Modifier.weight(1f))
-					}
-				}
-				HorizontalDivider()
+			ListAsCards(spec.columns, rows, rowActions, onRowAction)
+		}
+	}
+}
+
+/** Per-row overflow (â‹®) menu with an icon on every item. Destructive items are tinted. */
+@Composable
+private fun RowActionsMenu(
+	actions: List<ScreenAction>,
+	onAction: (ScreenAction) -> Unit,
+	modifier: Modifier = Modifier,
+) {
+	if (actions.isEmpty()) return
+	var expanded by remember { mutableStateOf(false) }
+	Box(modifier) {
+		IconButton(onClick = { expanded = true }) {
+			Icon(Icons.Default.MoreVert, contentDescription = "Actions")
+		}
+		DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+			actions.forEach { action ->
+				val destructive = action.id == "delete" || action.id == "reject"
+				val tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+				DropdownMenuItem(
+					text = { Text(action.label, color = tint) },
+					leadingIcon = { Icon(iconFor(action.icon), contentDescription = null, tint = tint) },
+					onClick = { expanded = false; onAction(action) },
+				)
 			}
 		}
 	}
+}
+
+/**
+ * Heuristic: use a horizontal-scroll table when the data is dense (many columns or a wide
+ * combined width); otherwise fall back to the mobile-native card layout.
+ */
+private fun shouldUseTable(columns: List<ListColumn>): Boolean {
+	val totalWidth = columns.sumOf { it.width }
+	return columns.size >= 5 || totalWidth > 560
+}
+
+/** Mobile-native card layout: emphasized title + label:value rows, badge columns become chips. */
+@Composable
+private fun ListAsCards(
+	columns: List<ListColumn>,
+	rows: List<Map<String, String>>,
+	rowActions: List<ScreenAction> = emptyList(),
+	onRowAction: (ScreenAction) -> Unit = {},
+) {
+	val titleCol = columns.firstOrNull()
+	val badgeCol = columns.firstOrNull { it.type == FieldTypes.BADGE }
+	val detailCols = columns.filter { it != titleCol && it != badgeCol }
+
+	Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+		rows.forEach { row ->
+			ElevatedCard(Modifier.fillMaxWidth()) {
+				Column(
+					Modifier.fillMaxWidth().padding(16.dp),
+					verticalArrangement = Arrangement.spacedBy(8.dp),
+				) {
+					Row(
+						Modifier.fillMaxWidth(),
+						horizontalArrangement = Arrangement.SpaceBetween,
+						verticalAlignment = Alignment.CenterVertically,
+					) {
+						Text(
+							titleCol?.let { row[it.name].orEmpty() }.orEmpty().ifEmpty { "—" },
+							style = MaterialTheme.typography.titleMedium,
+							fontWeight = FontWeight.SemiBold,
+							maxLines = 1,
+							overflow = TextOverflow.Ellipsis,
+							modifier = Modifier.weight(1f),
+						)
+						badgeCol?.let {
+							Spacer(Modifier.width(8.dp))
+							StatusChip(row[it.name].orEmpty())
+						}
+						RowActionsMenu(rowActions, { onRowAction(it.resolveFor(row)) })
+					}
+					detailCols.forEach { col ->
+						Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+							Text(
+								col.label,
+								style = MaterialTheme.typography.labelMedium,
+								color = MaterialTheme.colorScheme.onSurfaceVariant,
+								modifier = Modifier.width(120.dp),
+							)
+							if (col.type == FieldTypes.BADGE) {
+								StatusChip(row[col.name].orEmpty())
+							} else {
+								Text(
+									row[col.name].orEmpty().ifEmpty { "—" },
+									style = MaterialTheme.typography.bodyMedium,
+									modifier = Modifier.weight(1f),
+								)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/** Dense table layout: honors each column's backend width, single-line + ellipsis, scrolls horizontally. */
+@Composable
+private fun ListAsTable(
+	columns: List<ListColumn>,
+	rows: List<Map<String, String>>,
+	rowActions: List<ScreenAction> = emptyList(),
+	onRowAction: (ScreenAction) -> Unit = {},
+) {
+	val hScroll = rememberScrollState()
+	Column(Modifier.fillMaxWidth().horizontalScroll(hScroll)) {
+		// Header
+		Row(
+			Modifier
+				.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+				.padding(vertical = 10.dp, horizontal = 4.dp),
+		) {
+			columns.forEach { col ->
+				Text(
+					col.label,
+					style = MaterialTheme.typography.labelLarge,
+					fontWeight = FontWeight.SemiBold,
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis,
+					modifier = Modifier.width(col.width.dp).padding(horizontal = 8.dp),
+				)
+			}
+			if (rowActions.isNotEmpty()) Spacer(Modifier.width(56.dp))
+		}
+		HorizontalDivider()
+		// Rows
+		rows.forEach { row ->
+			Row(Modifier.padding(vertical = 10.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+				columns.forEach { col ->
+					val cellMod = Modifier.width(col.width.dp).padding(horizontal = 8.dp)
+					if (col.type == FieldTypes.BADGE) {
+						StatusChip(row[col.name].orEmpty(), modifier = cellMod)
+					} else {
+						Text(
+							row[col.name].orEmpty().ifEmpty { "—" },
+							style = MaterialTheme.typography.bodyMedium,
+							maxLines = 1,
+							overflow = TextOverflow.Ellipsis,
+							modifier = cellMod,
+						)
+					}
+				}
+				if (rowActions.isNotEmpty()) {
+					RowActionsMenu(rowActions, { onRowAction(it.resolveFor(row)) }, Modifier.width(56.dp))
+				}
+			}
+			HorizontalDivider()
+		}
+	}
+}
+
+/**
+ * Resolves the row's id into any `{id}` placeholder in the action's navigateTo / apiEndpoint,
+ * so per-row actions target the correct record.
+ */
+private fun ScreenAction.resolveFor(row: Map<String, String>): ScreenAction {
+	val id = row["id"] ?: row["Id"] ?: return this
+	return copy(
+		navigateTo = navigateTo?.replace("{id}", id),
+		apiEndpoint = apiEndpoint?.replace("{id}", id),
+	)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -348,3 +550,64 @@ private fun validate(spec: FormScreenSpec, values: Map<String, String>): Map<Str
  * material-icons-extended set by name (with a cached reflection lookup + fallback).
  */
 fun iconFor(name: String): ImageVector = MaterialIconResolver.resolve(name)
+
+/* ---------------- STATUS CHIPS ---------------- */
+
+private enum class StatusTone { Positive, Warning, Negative, Neutral }
+
+/** Maps a free-text status/badge value to a semantic tone (green / amber / red / neutral). */
+private fun statusToneFor(value: String): StatusTone {
+	val v = value.trim().lowercase()
+	if (v.isEmpty()) return StatusTone.Neutral
+	val positive = listOf(
+		"active", "approved", "completed", "complete", "passed", "pass", "hired", "current",
+		"valid", "enrolled", "on track", "ontrack", "paid", "open", "success", "won", "excellent",
+		"good", "met", "achieved", "verified", "submitted", "confirmed", "yes",
+	)
+	val warning = listOf(
+		"pending", "in progress", "in-progress", "inprogress", "review", "in review", "scheduled",
+		"draft", "on hold", "onhold", "waiting", "expiring", "at risk", "atrisk", "partial",
+		"probation", "onboarding", "interview", "offered", "maybe",
+	)
+	val negative = listOf(
+		"inactive", "rejected", "failed", "fail", "expired", "overdue", "terminated", "cancelled",
+		"canceled", "declined", "closed", "lost", "off track", "offtrack", "missed", "denied",
+		"blocked", "suspended", "no",
+	)
+	return when {
+		negative.any { v.contains(it) } -> StatusTone.Negative
+		warning.any { v.contains(it) } -> StatusTone.Warning
+		positive.any { v.contains(it) } -> StatusTone.Positive
+		else -> StatusTone.Neutral
+	}
+}
+
+@Composable
+private fun StatusChip(value: String, modifier: Modifier = Modifier) {
+	if (value.isBlank()) {
+		Text("—", style = MaterialTheme.typography.bodyMedium, modifier = modifier)
+		return
+	}
+	val scheme = MaterialTheme.colorScheme
+	val (container, content) = when (statusToneFor(value)) {
+		StatusTone.Positive -> Color(0xFF1B5E20).copy(alpha = 0.14f) to Color(0xFF1B5E20)
+		StatusTone.Warning  -> Color(0xFFB26A00).copy(alpha = 0.16f) to Color(0xFFB26A00)
+		StatusTone.Negative -> Color(0xFFB3261E).copy(alpha = 0.14f) to Color(0xFFB3261E)
+		StatusTone.Neutral  -> scheme.surfaceVariant to scheme.onSurfaceVariant
+	}
+	Surface(
+		color = container,
+		contentColor = content,
+		shape = MaterialTheme.shapes.small,
+		modifier = modifier,
+	) {
+		Text(
+			text = value,
+			style = MaterialTheme.typography.labelMedium,
+			fontWeight = FontWeight.SemiBold,
+			maxLines = 1,
+			overflow = TextOverflow.Ellipsis,
+			modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+		)
+	}
+}

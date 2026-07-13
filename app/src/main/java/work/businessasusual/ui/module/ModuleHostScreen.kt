@@ -1,6 +1,10 @@
 ﻿package work.businessasusual.ui.module
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import work.businessasusual.ui.components.BAUScreenScaffold
 import work.businessasusual.ui.mobileui.MobileUiScreen
@@ -21,6 +25,12 @@ fun ModuleHostScreen(
     onDarkThemeChange: (Boolean) -> Unit,
 ) {
     val title = moduleId.replaceFirstChar { it.uppercase() }
+    var screenTitle by remember(moduleId) { mutableStateOf<String?>(null) }
+    val breadcrumbs = buildList {
+        add("Dashboard")
+        add(title)
+        screenTitle?.takeIf { it.isNotBlank() && it != title }?.let { add(it) }
+    }
     BAUScreenScaffold(
         navController = navController,
         title = title,
@@ -29,8 +39,11 @@ fun ModuleHostScreen(
         darkTheme = darkTheme,
         onThemeChange = onThemeChange,
         onDarkThemeChange = onDarkThemeChange,
-        breadcrumbs = listOf("Dashboard", title)
+        breadcrumbs = breadcrumbs
     ) {
-        MobileUiScreen(moduleId = moduleId)
+        MobileUiScreen(
+            moduleId = moduleId,
+            onScreenTitleChange = { screenTitle = it },
+        )
     }
 }
