@@ -1,6 +1,5 @@
-package work.businessasusual.domain.di
+﻿package work.businessasusual.domain.di
 
-import work.businessasusual.domain.usecase.GetHrActionsUseCase
 import work.businessasusual.domain.usecase.GetModulesUseCase
 import work.businessasusual.domain.usecase.GetEmployeeDetailSpecUseCase
 import work.businessasusual.domain.usecase.GetEmployeeFormSpecUseCase
@@ -11,14 +10,13 @@ import org.koin.dsl.module
 
 val domainModule = module {
 
-	// ---- Existing ----
-	factory { GetModulesUseCase(get()) }
-	factory { GetHrActionsUseCase(get()) }
+// ---- Module discovery ----
+factory { GetModulesUseCase(get()) }
 
-	// ---- New: Mobile UI contract use cases ----
-	factory { GetModuleUiUseCase(get()) }
-	factory { GetNavigationUseCase(get()) }
-	factory { GetEmployeeListSpecUseCase(get()) }
-	factory { GetEmployeeDetailSpecUseCase(get()) }
-	factory { GetEmployeeFormSpecUseCase(get()) }
+// ---- Mobile UI contract use cases ----
+factory { GetModuleUiUseCase(get()) }
+factory { GetNavigationUseCase(get()) }
+factory { GetEmployeeListSpecUseCase(get()) }
+factory { GetEmployeeDetailSpecUseCase(get()) }
+factory { GetEmployeeFormSpecUseCase(get()) }
 }

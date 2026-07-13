@@ -1,23 +1,26 @@
 ﻿package work.businessasusual.ui.components
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import work.businessasusual.ui.navigation.navigationItems
+import work.businessasusual.ui.icons.iconKeyToDrawableRes
+import work.businessasusual.ui.navigation.NavigationItem
 
 @Composable
 fun BAUNavigationDrawer(
     drawerState: DrawerState,
     currentRoute: String?,
+    navigationItems: List<NavigationItem>,
     onNavigate: (String) -> Unit,
     content: @Composable () -> Unit
 ) {
@@ -49,8 +52,9 @@ fun BAUNavigationDrawer(
                         },
                         icon = {
                             Icon(
-                                imageVector = item.icon,
+                                painter = painterResource(id = iconKeyToDrawableRes(item.iconKey)),
                                 contentDescription = item.label,
+                                modifier = Modifier.size(24.dp),
                                 tint = if (isSelected)
                                     MaterialTheme.colorScheme.primary
                                 else
@@ -61,7 +65,7 @@ fun BAUNavigationDrawer(
                             selectedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                             unselectedContainerColor = Color.Transparent
                         ),
-                        selected = currentRoute == item.route,
+                        selected = isSelected,
                         onClick = { onNavigate(item.route) }
                     )
                 }

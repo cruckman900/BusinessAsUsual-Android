@@ -5,9 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import work.businessasusual.ui.dashboard.DashboardScreen
-import work.businessasusual.ui.hr.HrScreen
-import work.businessasusual.ui.finance.FinanceScreen
-import work.businessasusual.ui.crm.CrmScreen
+import work.businessasusual.ui.module.ModuleHostScreen
 import work.businessasusual.ui.splash.SplashScreen
 
 @Composable
@@ -33,7 +31,7 @@ fun AppNavHost(
                 navController = navController,
                 onNavigate = { route -> navController.navigate(route) },
                 onModuleClick = { module ->
-                    navController.navigate("module/${module.id}")
+                    navController.navigate(module.route)
                 },
                 themeName = themeName,
                 darkTheme = darkTheme,
@@ -42,48 +40,19 @@ fun AppNavHost(
             )
         }
 
+        // Any backend-discovered module is hosted generically via its
+        // contract-driven UI. No per-module route needs to be hard-coded.
         composable("module/{moduleId}") { backStackEntry ->
-            when (backStackEntry.arguments?.getString("moduleId")) {
-
-                "hr" -> HrScreen(
-                    navController = navController,
-                    onNavigate = { route -> navController.navigate(route) },
-                    themeName = themeName,
-                    darkTheme = darkTheme,
-                    onThemeChange = onThemeChange,
-                    onDarkThemeChange = onDarkThemeChange
-                )
-
-                "finance" -> FinanceScreen(
-                    navController = navController,
-                    onNavigate = { route -> navController.navigate(route) },
-                    themeName = themeName,
-                    darkTheme = darkTheme,
-                    onThemeChange = onThemeChange,
-                    onDarkThemeChange = onDarkThemeChange
-                )
-
-                "crm" -> CrmScreen(
-                    navController = navController,
-                    onNavigate = { route -> navController.navigate(route) },
-                    themeName = themeName,
-                    darkTheme = darkTheme,
-                    onThemeChange = onThemeChange,
-                    onDarkThemeChange = onDarkThemeChange
-                )
-
-                else -> DashboardScreen(
-                    navController = navController,
-                    onNavigate = { route -> navController.navigate(route) },
-                    onModuleClick = { module ->
-                        navController.navigate("module/${module.id}")
-                    },
-                    themeName = themeName,
-                    darkTheme = darkTheme,
-                    onThemeChange = onThemeChange,
-                    onDarkThemeChange = onDarkThemeChange
-                )
-            }
+            val moduleId = backStackEntry.arguments?.getString("moduleId").orEmpty()
+            ModuleHostScreen(
+                navController = navController,
+                moduleId = moduleId,
+                onNavigate = { route -> navController.navigate(route) },
+                themeName = themeName,
+                darkTheme = darkTheme,
+                onThemeChange = onThemeChange,
+                onDarkThemeChange = onDarkThemeChange
+            )
         }
     }
 }

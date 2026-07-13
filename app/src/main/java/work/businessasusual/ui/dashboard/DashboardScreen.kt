@@ -29,7 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import work.businessasusual.ui.components.BAUScreenScaffold
-import work.businessasusual.ui.icons.toDrawableRes
+import work.businessasusual.ui.icons.iconKeyToDrawableRes
 import work.businessasusual.domain.model.Module
 import org.koin.androidx.compose.koinViewModel
 
@@ -96,7 +96,7 @@ fun DashboardScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            painter = painterResource(id = module.icon.toDrawableRes()),
+                            painter = painterResource(id = iconKeyToDrawableRes(module.icon)),
                             contentDescription = module.name,
                             modifier = Modifier.size(40.dp),
                             tint = MaterialTheme.colorScheme.primary

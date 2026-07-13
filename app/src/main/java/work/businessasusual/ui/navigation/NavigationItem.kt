@@ -1,18 +1,31 @@
 ﻿package work.businessasusual.ui.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.graphics.vector.ImageVector
+import work.businessasusual.domain.model.Module
 
+/**
+ * A drawer/menu entry. [iconKey] is a backend-provided icon key resolved to a
+ * drawable at render time. Menu entries are built from discovered modules, not
+ * hard-coded.
+ */
 data class NavigationItem(
     val route: String,
     val label: String,
-    val icon: ImageVector
+    val iconKey: String,
 )
 
-val navigationItems = listOf(
-    NavigationItem("dashboard", "Dashboard", Icons.Filled.Dashboard),
-    NavigationItem("module/hr", "HR", Icons.Filled.People),
-    NavigationItem("module/finance", "Finance", Icons.Filled.AttachMoney),
-    NavigationItem("module/crm", "CRM", Icons.Filled.BusinessCenter)
+/** Static Dashboard entry that always heads the menu. */
+val dashboardNavigationItem = NavigationItem(
+    route = "dashboard",
+    label = "Dashboard",
+    iconKey = "dashboard",
 )
+
+/** Builds the menu from discovered modules, with Dashboard always first. */
+fun buildNavigationItems(modules: List<Module>): List<NavigationItem> =
+    listOf(dashboardNavigationItem) + modules.map { module ->
+        NavigationItem(
+            route = module.route,
+            label = module.name,
+            iconKey = module.icon,
+        )
+    }

@@ -15,6 +15,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import kotlinx.coroutines.launch
 import kotlin.collections.get
+import org.koin.androidx.compose.koinViewModel
+import work.businessasusual.ui.navigation.NavigationViewModel
 
 @Composable
 fun BAUScreenScaffold(
@@ -28,6 +30,8 @@ fun BAUScreenScaffold(
     breadcrumbs: List<String>,
     content: @Composable () -> Unit
 ) {
+    val navigationViewModel: NavigationViewModel = koinViewModel()
+    val navigationItems by navigationViewModel.items.collectAsState()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val themeDrawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -65,6 +69,7 @@ fun BAUScreenScaffold(
         BAUNavigationDrawer(
             drawerState = drawerState,
             currentRoute = currentRoute,
+            navigationItems = navigationItems,
             onNavigate = {
                 scope.launch { drawerState.close() }
                 onNavigate(it)

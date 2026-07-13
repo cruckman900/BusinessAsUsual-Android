@@ -1,4 +1,4 @@
-package work.businessasusual.ui.mobileui
+﻿package work.businessasusual.ui.mobileui
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -15,9 +15,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import work.businessasusual.domain.model.*
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
-fun MobileUiScreen(viewModel: MobileUiViewModel = koinViewModel()) {
+fun MobileUiScreen(
+	moduleId: String,
+	viewModel: MobileUiViewModel = koinViewModel { parametersOf(moduleId) },
+) {
 	val state by viewModel.state.collectAsStateWithLifecycle()
 	when (val s = state) {
 		MobileUiState.Loading ->
@@ -173,7 +177,7 @@ fun DynamicDetailScreen(
 							Column {
 								Text(field.label, style = MaterialTheme.typography.labelMedium)
 								Text(
-									values[field.name].orEmpty().ifEmpty { "—" },
+									values[field.name].orEmpty().ifEmpty { "â€”" },
 									style = MaterialTheme.typography.bodyLarge,
 								)
 							}
