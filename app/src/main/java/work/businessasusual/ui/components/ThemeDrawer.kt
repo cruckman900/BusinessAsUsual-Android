@@ -3,7 +3,7 @@
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
@@ -44,7 +44,7 @@ fun ThemeDrawer(
             Switch(checked = darkTheme, onCheckedChange = onDarkModeToggle)
         }
 
-        Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
         // Theme list
         listOf(

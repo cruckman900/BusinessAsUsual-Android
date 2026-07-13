@@ -33,7 +33,7 @@ fun BAUNavigationDrawer(
             ) {
 
                 DrawerProfileHeader()
-                Divider(
+                HorizontalDivider(
                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
@@ -70,7 +70,7 @@ fun BAUNavigationDrawer(
                     )
                 }
 
-                Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
                 Column(
                     modifier = Modifier

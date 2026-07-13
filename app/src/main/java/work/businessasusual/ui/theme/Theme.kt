@@ -1,10 +1,13 @@
 ﻿package work.businessasusual.ui.theme
 
+import android.app.Activity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.luminance
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowInsetsControllerCompat
 
 @Composable
 fun BAUTheme(
@@ -14,18 +17,23 @@ fun BAUTheme(
 ) {
     val colors = resolveTheme(themeName, darkTheme)
 
-    // Sync status bar + nav bar with theme
-    val systemUiController = rememberSystemUiController()
-    SideEffect {
-        systemUiController.setStatusBarColor(
-            color = colors.primary,
-            darkIcons = colors.primary.luminance() > 0.5f
-        )
+    // Sync status bar + nav bar with theme (native replacement for Accompanist).
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            val lightIcons = colors.primary.luminance() > 0.5f
 
-        systemUiController.setNavigationBarColor(
-            color = colors.primary,
-            darkIcons = colors.primary.luminance() > 0.5f
-        )
+            @Suppress("DEPRECATION")
+            window.statusBarColor = colors.primary.toArgb()
+            @Suppress("DEPRECATION")
+            window.navigationBarColor = colors.primary.toArgb()
+
+            WindowInsetsControllerCompat(window, view).apply {
+                isAppearanceLightStatusBars = lightIcons
+                isAppearanceLightNavigationBars = lightIcons
+            }
+        }
     }
 
     MaterialTheme(
