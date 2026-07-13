@@ -8,9 +8,34 @@ fun MobileUiSpecDto.toDomain() = ModuleUi(
 	moduleName = moduleName,
 	version = version,
 	navigation = navigation.toDomain(),
-	listScreen = screens.employeeList?.toDomain(),
-	detailScreen = screens.employeeDetail?.toDomain(),
-	formScreen = screens.employeeForm?.toDomain(),
+	screens = screens.mapNotNull { (key, dto) -> dto.toDomain()?.let { key to it } }.toMap(),
+)
+
+/** Maps a union screen DTO to a typed [ScreenSpec] based on its discriminator. */
+fun ScreenDto.toDomain(): ScreenSpec? = when (type) {
+	"list" -> ListScreenSpec(
+		title, searchPlaceholder, enableSearch, enableFilter,
+		columns.map { it.toDomain() }, actions.map { it.toDomain() },
+		filters.map { it.toDomain() }, emptyStateMessage,
+	)
+	"detail" -> DetailScreenSpec(
+		title, sections.map { it.toDetailSection() }, actions.map { it.toDomain() },
+	)
+	"form" -> FormScreenSpec(
+		title, sections.map { it.toFormSection() }, actions.map { it.toDomain() }, validation.toDomain(),
+	)
+	else -> null
+}
+
+fun ScreenSectionDto.toDetailSection() =
+	DetailSection(id, title, fields.map { it.toDetailField() }, collapsible, defaultCollapsed)
+fun ScreenFieldDto.toDetailField() = DetailField(name, label, type, readOnly, icon, format)
+
+fun ScreenSectionDto.toFormSection() = FormSection(id, title, fields.map { it.toFormField() })
+fun ScreenFieldDto.toFormField() = FormField(
+	name, label, type, required, placeholder, helpText,
+	options?.map { it.toDomain() } ?: emptyList(),
+	maxLength, minLength, pattern, validationMessage,
 )
 
 fun NavigationMapDto.toDomain() = NavigationMap(moduleId, moduleName, icon, items.map { it.toDomain() })

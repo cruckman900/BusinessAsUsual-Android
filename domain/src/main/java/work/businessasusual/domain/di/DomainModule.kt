@@ -6,6 +6,7 @@ import work.businessasusual.domain.usecase.GetEmployeeFormSpecUseCase
 import work.businessasusual.domain.usecase.GetEmployeeListSpecUseCase
 import work.businessasusual.domain.usecase.GetModuleUiUseCase
 import work.businessasusual.domain.usecase.GetNavigationUseCase
+import work.businessasusual.domain.usecase.GetScreenDataUseCase
 import org.koin.dsl.module
 
 val domainModule = module {
@@ -19,4 +20,5 @@ factory { GetNavigationUseCase(get()) }
 factory { GetEmployeeListSpecUseCase(get()) }
 factory { GetEmployeeDetailSpecUseCase(get()) }
 factory { GetEmployeeFormSpecUseCase(get()) }
+factory { GetScreenDataUseCase(get()) }
 }

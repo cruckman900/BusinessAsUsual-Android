@@ -6,10 +6,18 @@ data class ModuleUi(
 	val moduleName: String,
 	val version: String,
 	val navigation: NavigationMap,
-	val listScreen: ListScreenSpec? = null,
-	val detailScreen: DetailScreenSpec? = null,
-	val formScreen: FormScreenSpec? = null,
-)
+	val screens: Map<String, ScreenSpec> = emptyMap(),
+) {
+	/** First list screen, if any (convenience for legacy callers). */
+	val listScreen: ListScreenSpec? get() = screens.values.filterIsInstance<ListScreenSpec>().firstOrNull()
+	/** First detail screen, if any. */
+	val detailScreen: DetailScreenSpec? get() = screens.values.filterIsInstance<DetailScreenSpec>().firstOrNull()
+	/** First form screen, if any. */
+	val formScreen: FormScreenSpec? get() = screens.values.filterIsInstance<FormScreenSpec>().firstOrNull()
+}
+
+/** Marker for any contract-driven screen, discriminated by backend "type". */
+sealed interface ScreenSpec
 
 data class NavigationMap(
 	val moduleId: String,
@@ -39,7 +47,7 @@ data class ListScreenSpec(
 	val actions: List<ScreenAction>,
 	val filters: List<Filter>,
 	val emptyStateMessage: String,
-)
+) : ScreenSpec
 
 data class ListColumn(
 	val name: String,
@@ -57,7 +65,7 @@ data class DetailScreenSpec(
 	val title: String,
 	val sections: List<DetailSection>,
 	val actions: List<ScreenAction>,
-)
+) : ScreenSpec
 
 data class DetailSection(
 	val id: String,
@@ -82,7 +90,7 @@ data class FormScreenSpec(
 	val sections: List<FormSection>,
 	val actions: List<ScreenAction>,
 	val validation: FormValidation,
-)
+) : ScreenSpec
 
 data class FormSection(val id: String, val title: String, val fields: List<FormField>)
 

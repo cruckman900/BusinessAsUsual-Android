@@ -1,6 +1,5 @@
 package work.businessasusual.data.remote.dto
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -9,14 +8,61 @@ data class MobileUiSpecDto(
 	val moduleName: String = "",
 	val version: String = "",
 	val navigation: NavigationMapDto = NavigationMapDto(),
-	val screens: ScreensDto = ScreensDto(),
+	val screens: Map<String, ScreenDto> = emptyMap(),
 )
 
+/**
+ * Union DTO for any backend screen. The [type] discriminator selects which
+ * fields are relevant ("list" | "detail" | "form"); all others stay null/empty.
+ */
 @Serializable
-data class ScreensDto(
-	@SerialName("employee-list") val employeeList: EmployeeListSpecDto? = null,
-	@SerialName("employee-detail") val employeeDetail: EmployeeDetailSpecDto? = null,
-	@SerialName("employee-form") val employeeForm: EmployeeFormSpecDto? = null,
+data class ScreenDto(
+	val type: String = "",
+	val title: String = "",
+	// list
+	val searchPlaceholder: String = "",
+	val enableSearch: Boolean = true,
+	val enableFilter: Boolean = true,
+	val columns: List<ColumnDefinitionDto> = emptyList(),
+	val filters: List<FilterOptionDto> = emptyList(),
+	val emptyStateMessage: String = "",
+	// detail + form
+	val sections: List<ScreenSectionDto> = emptyList(),
+	// form
+	val validation: ValidationRulesDto = ValidationRulesDto(),
+	// shared
+	val actions: List<ActionButtonDto> = emptyList(),
+)
+
+/** Union section covering both detail and form sections. */
+@Serializable
+data class ScreenSectionDto(
+	val id: String = "",
+	val title: String = "",
+	val fields: List<ScreenFieldDto> = emptyList(),
+	val collapsible: Boolean = false,
+	val defaultCollapsed: Boolean = false,
+)
+
+/** Union field covering both detail and form field shapes. */
+@Serializable
+data class ScreenFieldDto(
+	val name: String = "",
+	val label: String = "",
+	val type: String = "text",
+	// detail
+	val readOnly: Boolean = true,
+	val icon: String? = null,
+	val format: String? = null,
+	// form
+	val required: Boolean = false,
+	val placeholder: String? = null,
+	val helpText: String? = null,
+	val options: List<SelectOptionDto>? = null,
+	val maxLength: Int? = null,
+	val minLength: Int? = null,
+	val pattern: String? = null,
+	val validationMessage: String? = null,
 )
 
 @Serializable

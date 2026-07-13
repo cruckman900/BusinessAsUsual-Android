@@ -21,6 +21,13 @@ suspend fun getEmployeeListSpec(@Path("moduleKey") moduleKey: String): EmployeeL
 @GET("api/{moduleKey}/mobile/ui-spec/employee-detail")
 suspend fun getEmployeeDetailSpec(@Path("moduleKey") moduleKey: String): EmployeeDetailSpecDto
 
-@GET("api/{moduleKey}/mobile/ui-spec/employee-form")
-suspend fun getEmployeeFormSpec(@Path("moduleKey") moduleKey: String): EmployeeFormSpecDto
+	@GET("api/{moduleKey}/mobile/ui-spec/employee-form")
+	suspend fun getEmployeeFormSpec(@Path("moduleKey") moduleKey: String): EmployeeFormSpecDto
+
+	/** Row data for a list screen; each row is keyed by the screen's column names. */
+	@GET("api/{moduleKey}/mobile/data/{screenKey}")
+	suspend fun getScreenData(
+		@Path("moduleKey") moduleKey: String,
+		@Path("screenKey") screenKey: String,
+	): List<Map<String, String>>
 }

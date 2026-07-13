@@ -19,3 +19,7 @@ suspend operator fun invoke(moduleId: String): Resource<DetailScreenSpec> = repo
 class GetEmployeeFormSpecUseCase(private val repo: MobileUiRepository) {
 suspend operator fun invoke(moduleId: String): Resource<FormScreenSpec> = repo.getEmployeeFormSpec(moduleId)
 }
+class GetScreenDataUseCase(private val repo: MobileUiRepository) {
+suspend operator fun invoke(moduleId: String, screenKey: String): Resource<List<Map<String, String>>> =
+	repo.getScreenData(moduleId, screenKey)
+}

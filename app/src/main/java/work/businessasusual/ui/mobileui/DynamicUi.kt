@@ -40,12 +40,31 @@ fun MobileUiScreen(
 				Button(onClick = viewModel::load) { Text("Retry") }
 			}
 
-		is MobileUiState.Success -> ModuleContent(s.module)
+		is MobileUiState.Success -> ModuleContent(
+			module = s.module,
+			screenData = viewModel.screenData.collectAsStateWithLifecycle().value,
+			onScreenSelected = viewModel::loadScreenData,
+		)
 	}
 }
 
 @Composable
-private fun ModuleContent(module: ModuleUi) {
+private fun ModuleContent(
+	module: ModuleUi,
+	screenData: Map<String, List<Map<String, String>>>,
+	onScreenSelected: (String) -> Unit,
+) {
+	// Default to the first nav item's screen, falling back to the first available screen.
+	val defaultScreenKey = module.navigation.items.firstOrNull { module.screens.containsKey(it.screen) }?.screen
+		?: module.screens.keys.firstOrNull()
+	var selectedScreen by remember(module.moduleId) { mutableStateOf(defaultScreenKey) }
+
+	// Fetch rows whenever the selected list screen changes (cached in the ViewModel).
+	LaunchedEffect(selectedScreen) {
+		val key = selectedScreen ?: return@LaunchedEffect
+		if (module.screens[key] is ListScreenSpec) onScreenSelected(key)
+	}
+
 	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
 		Column(Modifier.fillMaxWidth().padding(16.dp)) {
 			Text(module.moduleName, style = MaterialTheme.typography.headlineMedium)
@@ -57,8 +76,11 @@ private fun ModuleContent(module: ModuleUi) {
 			horizontalArrangement = Arrangement.spacedBy(8.dp),
 		) {
 			module.navigation.items.forEach { item ->
-				AssistChip(
-					onClick = { /* TODO: navigate to item.screen */ },
+				val enabled = module.screens.containsKey(item.screen)
+				FilterChip(
+					selected = selectedScreen == item.screen,
+					enabled = enabled,
+					onClick = { selectedScreen = item.screen },
 					label = { Text(item.label) },
 					leadingIcon = { Icon(iconFor(item.icon), contentDescription = null) },
 				)
@@ -67,12 +89,17 @@ private fun ModuleContent(module: ModuleUi) {
 
 		HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-		// Self-contained demo: build the Employee form entirely from the contract.
-		module.formScreen?.let { DynamicFormScreen(spec = it) }
-
-		// Ready to use once you feed real data:
-		// module.listScreen?.let { DynamicListScreen(spec = it, rows = /* from HR data API */ emptyList()) }
-		// module.detailScreen?.let { DynamicDetailScreen(spec = it, values = /* selected employee */ emptyMap()) }
+		when (val screen = selectedScreen?.let { module.screens[it] }) {
+			is ListScreenSpec -> DynamicListScreen(
+				spec = screen,
+				rows = screenData[selectedScreen].orEmpty(),
+			)
+			is DetailScreenSpec -> DynamicDetailScreen(spec = screen)
+			is FormScreenSpec -> DynamicFormScreen(spec = screen)
+			null -> Box(Modifier.fillMaxWidth().padding(24.dp), Alignment.Center) {
+				Text("No screen available for this section.", style = MaterialTheme.typography.bodyMedium)
+			}
+		}
 	}
 }
 

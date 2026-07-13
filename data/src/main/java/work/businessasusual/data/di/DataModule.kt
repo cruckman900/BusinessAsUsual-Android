@@ -15,10 +15,10 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 // Emulator loopback to your host machine. Point this at your gateway/module services.
-private const val BASE_URL = "http://10.0.2.2:5001/"
+private const val BASE_URL = "http://10.0.2.2:5041/"
 
 // ModuleRegistry service used for backend-driven module discovery.
-private const val MODULE_REGISTRY_URL = "http://10.0.2.2:5000/"
+private const val MODULE_REGISTRY_URL = "http://10.0.2.2:5100/"
 
 val dataModule = module {
 

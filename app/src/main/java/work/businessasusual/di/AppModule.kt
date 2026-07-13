@@ -15,5 +15,5 @@ val appModule = module {
     viewModel { NavigationViewModel(getModulesUseCase = get()) }
 
     // Contract-driven module UI host (moduleId supplied at navigation time)
-    viewModel { (moduleId: String) -> MobileUiViewModel(moduleId, get()) }
+    viewModel { (moduleId: String) -> MobileUiViewModel(moduleId, get(), get()) }
 }

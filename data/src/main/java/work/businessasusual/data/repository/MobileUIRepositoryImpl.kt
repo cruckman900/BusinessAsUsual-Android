@@ -23,7 +23,10 @@ override suspend fun getEmployeeDetailSpec(moduleId: String): Resource<DetailScr
 safeCall { api.getEmployeeDetailSpec(moduleId).toDomain() }
 
 override suspend fun getEmployeeFormSpec(moduleId: String): Resource<FormScreenSpec> =
-safeCall { api.getEmployeeFormSpec(moduleId).toDomain() }
+	safeCall { api.getEmployeeFormSpec(moduleId).toDomain() }
+
+override suspend fun getScreenData(moduleId: String, screenKey: String): Resource<List<Map<String, String>>> =
+	safeCall { api.getScreenData(moduleId, screenKey) }
 
 private suspend fun <T> safeCall(block: suspend () -> T): Resource<T> = try {
 Resource.Success(block())
