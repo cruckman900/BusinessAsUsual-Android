@@ -10,15 +10,41 @@ android {
 
 	defaultConfig {
 		minSdk = 26
+
+		// Local dev services reachable from the emulator via the host loopback.
+		buildConfigField("String", "LOCAL_HR_URL", "\"http://10.0.2.2:5041/\"")
+		buildConfigField("String", "LOCAL_REGISTRY_URL", "\"http://10.0.2.2:5100/\"")
+
+		// AWS ALB endpoint. Replace with the ALB DNS printed by deploy/aws/02-provision-infra.ps1.
+		// HR + registry share one ALB (path-routed), so both point at the same base.
+		buildConfigField("String", "AWS_HR_URL", "\"http://REPLACE_WITH_ALB_DNS/\"")
+		buildConfigField("String", "AWS_REGISTRY_URL", "\"http://REPLACE_WITH_ALB_DNS/\"")
+	}
+
+	buildTypes {
+		debug {
+			// Debug: try LOCAL first, then AWS.
+			buildConfigField("Boolean", "AWS_FIRST", "false")
+		}
+		release {
+			// Release: try AWS first, then LOCAL.
+			buildConfigField("Boolean", "AWS_FIRST", "true")
+		}
+	}
+
+	buildFeatures {
+		buildConfig = true
 	}
 
 	compileOptions {
-		sourceCompatibility = JavaVersion.VERSION_1_8
-		targetCompatibility = JavaVersion.VERSION_1_8
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
 	}
+}
 
-	kotlinOptions {
-		jvmTarget = "1.8"
+kotlin {
+	compilerOptions {
+		jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
 	}
 }
 
