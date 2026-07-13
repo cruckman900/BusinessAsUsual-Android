@@ -19,3 +19,8 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# MaterialIconResolver looks up material-icons-extended vectors by reflection
+# (androidx.compose.material.icons.filled.<Name>Kt#get<Name>). Keep these generated
+# classes/methods so dynamic contract-driven icons survive release minification.
+-keep class androidx.compose.material.icons.filled.**Kt { *; }

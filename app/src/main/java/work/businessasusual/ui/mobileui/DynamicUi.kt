@@ -342,19 +342,9 @@ private fun validate(spec: FormScreenSpec, values: Map<String, String>): Map<Str
 	return errors
 }
 
-/** Maps the contract's Material icon names to Compose icons (base-safe with a fallback). */
-fun iconFor(name: String): ImageVector = when (name) {
-	"add", "add_circle", "add_business", "person_add" -> Icons.Default.Add
-	"edit" -> Icons.Default.Edit
-	"email" -> Icons.Default.Email
-	"phone" -> Icons.Default.Phone
-	"people", "person", "person_search" -> Icons.Default.Person
-	"home" -> Icons.Default.Home
-	"settings" -> Icons.Default.Settings
-	"search" -> Icons.Default.Search
-	"save", "check" -> Icons.Default.Check
-	"close", "cancel" -> Icons.Default.Close
-	"delete", "block" -> Icons.Default.Delete
-	"warning" -> Icons.Default.Warning
-	else -> Icons.Default.Info
-}
+/**
+ * Maps the contract's Material icon names to Compose icons with full 1-to-1 parity to the
+ * MudBlazor web app. Delegates to [MaterialIconResolver], which resolves the entire
+ * material-icons-extended set by name (with a cached reflection lookup + fallback).
+ */
+fun iconFor(name: String): ImageVector = MaterialIconResolver.resolve(name)
