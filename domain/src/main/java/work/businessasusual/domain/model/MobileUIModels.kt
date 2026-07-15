@@ -49,6 +49,7 @@ data class ListScreenSpec(
 	val actions: List<ScreenAction>,
 	val filters: List<Filter>,
 	val emptyStateMessage: String,
+	val stats: List<StatCard> = emptyList(),
 ) : ScreenSpec
 
 data class ListColumn(
@@ -61,6 +62,37 @@ data class ListColumn(
 
 data class Filter(val id: String, val label: String, val type: String, val values: List<FilterValue>)
 data class FilterValue(val id: String, val label: String, val value: String)
+
+// ---- Timeline screen ----
+data class TimelineScreenSpec(
+	val title: String,
+	val searchPlaceholder: String,
+	val enableSearch: Boolean,
+	val stats: List<StatCard>,
+	val itemFields: TimelineItemFields,
+	val actions: List<ScreenAction>,
+	val emptyStateMessage: String,
+) : ScreenSpec
+
+data class TimelineItemFields(
+	val titleField: String = "subject",
+	val subtitleField: String = "relatedTo",
+	val descriptionField: String = "description",
+	val timestampField: String = "dueDate",
+	val statusField: String = "status",
+	val typeField: String = "type",
+	val ownerField: String = "owner",
+	val iconField: String = "icon",
+)
+
+// ---- Stat card ----
+data class StatCard(
+	val id: String,
+	val label: String,
+	val value: String,
+	val icon: String,
+	val tone: String,
+)
 
 // ---- Detail screen ----
 data class DetailScreenSpec(

@@ -2,6 +2,7 @@ package work.businessasusual.ui.mobileui
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.StarHalf
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -75,7 +77,7 @@ private fun ModuleContent(
 	// Fetch rows whenever the selected list screen changes (cached in the ViewModel).
 	LaunchedEffect(selectedScreen) {
 		val key = selectedScreen ?: return@LaunchedEffect
-		if (module.screens[key] is ListScreenSpec) onScreenSelected(key)
+		if (module.screens[key] is ListScreenSpec || module.screens[key] is TimelineScreenSpec) onScreenSelected(key)
 	}
 
 	// Report the human-readable label of the current screen so the scaffold can
@@ -124,12 +126,194 @@ private fun ModuleContent(
 			)
 			is DetailScreenSpec -> DynamicDetailScreen(spec = screen)
 			is FormScreenSpec -> DynamicFormScreen(spec = screen)
+			is TimelineScreenSpec -> DynamicTimelineScreen(
+				spec = screen,
+				rows = screenData[selectedScreen].orEmpty(),
+				onAction = { action ->
+					val target = action.navigateTo
+						?.substringAfterLast('/')
+						?.takeIf { module.screens.containsKey(it) }
+					if (target != null) selectedScreen = target
+				},
+			)
 			is ChartScreenSpec -> ChartDashboard(
 				charts = screen.charts,
 				emptyMessage = screen.emptyStateMessage,
 			)
 			null -> Box(Modifier.fillMaxWidth().padding(24.dp), Alignment.Center) {
 				Text("No screen available for this section.", style = MaterialTheme.typography.bodyMedium)
+			}
+		}
+	}
+}
+
+/* ---------------- STATS ---------------- */
+
+/** Semantic tone -> accent color for a stat tile, matching the web MudText colors. */
+private fun statColor(tone: String): Color = when (tone.trim().lowercase()) {
+	"positive", "success" -> Color(0xFF1B5E20)
+	"warning" -> Color(0xFFB26A00)
+	"negative", "error" -> Color(0xFFB3261E)
+	"info" -> Color(0xFF0D66C2)
+	else -> Color(0xFF5F6368)
+}
+
+/** Horizontal row of small stat tiles (mirrors the web MudPaper stat cards). */
+@Composable
+private fun StatCardsRow(stats: List<StatCard>) {
+	Row(
+		Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+		horizontalArrangement = Arrangement.spacedBy(10.dp),
+	) {
+		stats.forEach { stat ->
+			val accent = statColor(stat.tone)
+			Surface(
+				shape = MaterialTheme.shapes.medium,
+				tonalElevation = 1.dp,
+				shadowElevation = 1.dp,
+				modifier = Modifier.widthIn(min = 96.dp),
+			) {
+				Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+					if (stat.icon.isNotBlank()) {
+						Icon(iconFor(stat.icon), contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
+						Spacer(Modifier.height(4.dp))
+					}
+					Text(stat.value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = accent)
+					Text(stat.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				}
+			}
+		}
+	}
+}
+
+/* ---------------- TIMELINE ---------------- */
+
+@Composable
+fun DynamicTimelineScreen(
+	spec: TimelineScreenSpec,
+	rows: List<Map<String, String>> = emptyList(),
+	onAction: (ScreenAction) -> Unit = {},
+) {
+	var query by remember { mutableStateOf("") }
+	val f = spec.itemFields
+	Column(
+		Modifier.fillMaxWidth().padding(16.dp),
+		verticalArrangement = Arrangement.spacedBy(12.dp),
+	) {
+		Text(spec.title, style = MaterialTheme.typography.headlineSmall)
+
+		if (spec.stats.isNotEmpty()) StatCardsRow(spec.stats)
+
+		if (spec.enableSearch) {
+			OutlinedTextField(
+				value = query,
+				onValueChange = { query = it },
+				leadingIcon = { Icon(Icons.Default.Search, null) },
+				placeholder = { Text(spec.searchPlaceholder) },
+				singleLine = true,
+				modifier = Modifier.fillMaxWidth(),
+			)
+		}
+
+		spec.actions.firstOrNull { it.action == ActionTypes.NAVIGATE && it.id == "add" }?.let { add ->
+			Button(onClick = { onAction(add) }) {
+				Icon(iconFor(add.icon), null); Spacer(Modifier.width(6.dp)); Text(add.label)
+			}
+		}
+
+		val filtered = if (query.isBlank()) rows else rows.filter { row ->
+			row.values.any { it.contains(query, ignoreCase = true) }
+		}
+
+		if (filtered.isEmpty()) {
+			Text(spec.emptyStateMessage, style = MaterialTheme.typography.bodyMedium)
+		} else {
+			filtered.forEachIndexed { index, row ->
+				TimelineItemRow(row = row, fieldMap = f, isLast = index == filtered.lastIndex)
+			}
+		}
+	}
+}
+
+/** A single vertical timeline entry: colored node + connector + outlined card. */
+@Composable
+private fun TimelineItemRow(
+	row: Map<String, String>,
+	fieldMap: TimelineItemFields,
+	isLast: Boolean,
+) {
+	val status = row[fieldMap.statusField].orEmpty()
+	val accent = when (statusToneFor(status)) {
+		StatusTone.Positive -> Color(0xFF1B5E20)
+		StatusTone.Warning -> Color(0xFFB26A00)
+		StatusTone.Negative -> Color(0xFFB3261E)
+		StatusTone.Neutral -> Color(0xFF0D66C2)
+	}
+	Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+		Column(
+			horizontalAlignment = Alignment.CenterHorizontally,
+			modifier = Modifier.width(28.dp).fillMaxHeight(),
+		) {
+			Box(
+				Modifier.size(20.dp).clip(CircleShape).background(accent),
+				contentAlignment = Alignment.Center,
+			) {
+				val icon = row[fieldMap.iconField].orEmpty()
+				if (icon.isNotBlank()) {
+					Icon(iconFor(icon), contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
+				}
+			}
+			if (!isLast) {
+				Box(Modifier.width(2.dp).weight(1f).background(accent.copy(alpha = 0.35f)))
+			}
+		}
+		Spacer(Modifier.width(8.dp))
+		OutlinedCard(modifier = Modifier.weight(1f).padding(bottom = 12.dp)) {
+			Column(Modifier.padding(12.dp)) {
+				Row(verticalAlignment = Alignment.CenterVertically) {
+					Text(
+						row[fieldMap.titleField].orEmpty(),
+						style = MaterialTheme.typography.titleSmall,
+						fontWeight = FontWeight.SemiBold,
+						modifier = Modifier.weight(1f),
+					)
+					if (status.isNotBlank()) StatusChip(status)
+				}
+				row[fieldMap.subtitleField]?.takeIf { it.isNotBlank() }?.let {
+					Spacer(Modifier.height(2.dp))
+					Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				}
+				row[fieldMap.descriptionField]?.takeIf { it.isNotBlank() }?.let {
+					Spacer(Modifier.height(6.dp))
+					Text(it, style = MaterialTheme.typography.bodyMedium)
+				}
+				Spacer(Modifier.height(8.dp))
+				Row(
+					horizontalArrangement = Arrangement.spacedBy(12.dp),
+					verticalAlignment = Alignment.CenterVertically,
+				) {
+					row[fieldMap.typeField]?.takeIf { it.isNotBlank() }?.let {
+						Row(verticalAlignment = Alignment.CenterVertically) {
+							Icon(Icons.Filled.Category, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+							Spacer(Modifier.width(4.dp))
+							Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+						}
+					}
+					row[fieldMap.timestampField]?.takeIf { it.isNotBlank() }?.let {
+						Row(verticalAlignment = Alignment.CenterVertically) {
+							Icon(Icons.Filled.Schedule, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+							Spacer(Modifier.width(4.dp))
+							Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+						}
+					}
+					row[fieldMap.ownerField]?.takeIf { it.isNotBlank() }?.let {
+						Row(verticalAlignment = Alignment.CenterVertically) {
+							Icon(Icons.Filled.Person, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+							Spacer(Modifier.width(4.dp))
+							Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+						}
+					}
+				}
 			}
 		}
 	}
@@ -149,6 +333,8 @@ fun DynamicListScreen(
 		verticalArrangement = Arrangement.spacedBy(12.dp),
 	) {
 		Text(spec.title, style = MaterialTheme.typography.headlineSmall)
+
+		if (spec.stats.isNotEmpty()) StatCardsRow(spec.stats)
 
 		if (spec.enableSearch) {
 			OutlinedTextField(

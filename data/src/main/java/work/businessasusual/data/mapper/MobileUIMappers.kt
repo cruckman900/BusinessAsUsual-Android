@@ -18,6 +18,12 @@ fun ScreenDto.toDomain(): ScreenSpec? = when (type) {
 		title, searchPlaceholder, enableSearch, enableFilter,
 		columns.map { it.toDomain() }, actions.map { it.toDomain() },
 		filters.map { it.toDomain() }, emptyStateMessage,
+		stats.map { it.toDomain() },
+	)
+	"timeline" -> TimelineScreenSpec(
+		title, searchPlaceholder, enableSearch,
+		stats.map { it.toDomain() }, itemFields.toDomain(),
+		actions.map { it.toDomain() }, emptyStateMessage,
 	)
 	"detail" -> DetailScreenSpec(
 		title, sections.map { it.toDetailSection() }, actions.map { it.toDomain() },
@@ -37,6 +43,12 @@ fun ChartSpecDto.toDomain() = ChartSpec(
 )
 fun ChartSeriesDto.toDomain() = ChartSeries(name, color, points.map { it.toDomain() })
 fun ChartDataPointDto.toDomain() = ChartDataPoint(label, value, color)
+
+fun StatCardDto.toDomain() = StatCard(id, label, value, icon, tone)
+fun TimelineItemFieldMapDto.toDomain() = TimelineItemFields(
+	titleField, subtitleField, descriptionField, timestampField,
+	statusField, typeField, ownerField, iconField,
+)
 
 fun ScreenSectionDto.toDetailSection() =
 	DetailSection(id, title, fields.map { it.toDetailField() }, collapsible, defaultCollapsed)

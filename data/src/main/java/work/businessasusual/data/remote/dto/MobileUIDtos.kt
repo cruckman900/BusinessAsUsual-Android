@@ -34,8 +34,33 @@ data class ScreenDto(
 	val validation: ValidationRulesDto = ValidationRulesDto(),
 	// chart
 	val charts: List<ChartSpecDto> = emptyList(),
+	// timeline
+	val itemFields: TimelineItemFieldMapDto = TimelineItemFieldMapDto(),
+	// list + timeline
+	val stats: List<StatCardDto> = emptyList(),
 	// shared
 	val actions: List<ActionButtonDto> = emptyList(),
+)
+
+@Serializable
+data class StatCardDto(
+	val id: String = "",
+	val label: String = "",
+	val value: String = "",
+	val icon: String = "",
+	val tone: String = "neutral",
+)
+
+@Serializable
+data class TimelineItemFieldMapDto(
+	val titleField: String = "subject",
+	val subtitleField: String = "relatedTo",
+	val descriptionField: String = "description",
+	val timestampField: String = "dueDate",
+	val statusField: String = "status",
+	val typeField: String = "type",
+	val ownerField: String = "owner",
+	val iconField: String = "icon",
 )
 
 @Serializable
