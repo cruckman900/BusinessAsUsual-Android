@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -64,6 +67,43 @@ fun DashboardScreen(
                 .background(MaterialTheme.colorScheme.background)
         ) {
 
+            // Welcome hero — gives the dashboard a lively landing feel instead of a bare button list.
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(Modifier.padding(20.dp)) {
+                    Text(
+                        "Welcome back",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (modules.isEmpty())
+                            "Loading your workspace…"
+                        else
+                            "You have ${modules.size} module${if (modules.size == 1) "" else "s"} available",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
+                    )
+                }
+            }
+
+            Text(
+                "Modules",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+            )
+
             modules.forEach { module ->
                 Card(
                     modifier = Modifier
@@ -114,6 +154,12 @@ fun DashboardScreen(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                             )
                         }
+                        Spacer(Modifier.weight(1f))
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
                     }
                 }
             }

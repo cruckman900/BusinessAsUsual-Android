@@ -44,9 +44,12 @@ fun BAUScreenScaffold(
         val target = breadcrumbs[index]
         when {
             target == "Dashboard" -> onNavigate("dashboard")
-            // Second crumb is always the current module; navigate to its host route.
-            index == 1 -> onNavigate("module/${target.lowercase()}")
-            else -> onNavigate("module/${target.lowercase()}")
+            // Any module/screen crumb navigates back to the current module host.
+            // Route by the real moduleId from the back stack args, never by the
+            // human-readable display label (e.g. "HR"/"CRM"), which does not
+            // reliably map to the canonical module route and caused 404s.
+            moduleId != null -> onNavigate("module/$moduleId")
+            else -> onNavigate("dashboard")
         }
     }
 
