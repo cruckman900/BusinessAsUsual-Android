@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.StarHalf
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -233,7 +234,7 @@ private fun ModuleOverview(
 					}
 					if (enabled) {
 						Icon(
-							Icons.Filled.KeyboardArrowRight,
+							Icons.AutoMirrored.Filled.KeyboardArrowRight,
 							contentDescription = null,
 							tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
 						)
