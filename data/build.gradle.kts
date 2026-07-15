@@ -15,10 +15,11 @@ android {
 		buildConfigField("String", "LOCAL_HR_URL", "\"http://10.0.2.2:5041/\"")
 		buildConfigField("String", "LOCAL_REGISTRY_URL", "\"http://10.0.2.2:5100/\"")
 
-		// AWS ALB endpoint. Replace with the ALB DNS printed by deploy/aws/02-provision-infra.ps1.
-		// HR + registry share one ALB (path-routed), so both point at the same base.
-		buildConfigField("String", "AWS_HR_URL", "\"http://REPLACE_WITH_ALB_DNS/\"")
-		buildConfigField("String", "AWS_REGISTRY_URL", "\"http://REPLACE_WITH_ALB_DNS/\"")
+		// Public AWS deployment behind the certbot-managed edge nginx.
+		// HR + registry share one host (path-routed by the compose gateway),
+		// so both point at the same HTTPS base.
+		buildConfigField("String", "AWS_HR_URL", "\"https://api.businessasusual.work/\"")
+		buildConfigField("String", "AWS_REGISTRY_URL", "\"https://api.businessasusual.work/\"")
 	}
 
 	buildTypes {

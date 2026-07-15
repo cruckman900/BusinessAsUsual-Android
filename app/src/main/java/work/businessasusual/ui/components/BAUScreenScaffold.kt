@@ -2,7 +2,6 @@
 
 import android.util.Log
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -78,13 +77,11 @@ fun BAUScreenScaffold(
 
             Scaffold(
                 topBar = {
-                    Column {
-                        BAUTopBar(
-                            title = title,
-                            onMenuClick = { scope.launch { drawerState.open() } },
-                            onThemeClick = { scope.launch { themeDrawerState.open() } }
-                        )
-                    }
+                    BAUTopBar(
+                        title = title,
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onThemeClick = { scope.launch { themeDrawerState.open() } }
+                    )
                 },
                 bottomBar = {
                     Surface(
