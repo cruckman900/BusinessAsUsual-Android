@@ -1,9 +1,10 @@
-﻿package work.businessasusual.ui.mobileui
+package work.businessasusual.ui.mobileui
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.StarHalf
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -48,7 +49,7 @@ fun MobileUiScreen(
 		is MobileUiState.Success -> {
 			// Surface the backend-provided display name (e.g. "CRM", "HR") verbatim
 			// so callers can render it without any case transformation.
-			LaunchedEffect(s.module.moduleName) { onModuleNameChange(s.module.moduleName) }
+			LaunchedEffect(s.module.displayName) { onModuleNameChange(s.module.displayName) }
 			ModuleContent(
 				module = s.module,
 				screenData = viewModel.screenData.collectAsStateWithLifecycle().value,
@@ -201,7 +202,7 @@ fun DynamicListScreen(
 	}
 }
 
-/** Per-row overflow (â‹®) menu with an icon on every item. Destructive items are tinted. */
+/** Per-row overflow (⋮) menu with an icon on every item. Destructive items are tinted. */
 @Composable
 private fun RowActionsMenu(
 	actions: List<ScreenAction>,
@@ -262,7 +263,7 @@ private fun ListAsCards(
 						verticalAlignment = Alignment.CenterVertically,
 					) {
 						Text(
-							titleCol?.let { row[it.name].orEmpty() }.orEmpty().ifEmpty { "—" },
+							titleCol?.let { row[it.name].orEmpty() }.orEmpty().ifEmpty { "�" },
 							style = MaterialTheme.typography.titleMedium,
 							fontWeight = FontWeight.SemiBold,
 							maxLines = 1,
@@ -287,8 +288,9 @@ private fun ListAsCards(
 								FieldTypes.BADGE -> StatusChip(row[col.name].orEmpty())
 								FieldTypes.PROGRESS -> ProgressBarCell(row[col.name].orEmpty(), Modifier.weight(1f))
 								FieldTypes.PERCENT -> PercentRing(row[col.name].orEmpty())
+					FieldTypes.RATING -> StarRatingCell(row[col.name].orEmpty())
 								else -> Text(
-									row[col.name].orEmpty().ifEmpty { "—" },
+									row[col.name].orEmpty().ifEmpty { "�" },
 									style = MaterialTheme.typography.bodyMedium,
 									modifier = Modifier.weight(1f),
 								)
@@ -339,8 +341,9 @@ private fun ListAsTable(
 						FieldTypes.BADGE -> StatusChip(row[col.name].orEmpty(), modifier = cellMod)
 						FieldTypes.PROGRESS -> ProgressBarCell(row[col.name].orEmpty(), cellMod)
 						FieldTypes.PERCENT -> PercentRing(row[col.name].orEmpty(), cellMod)
+					FieldTypes.RATING -> StarRatingCell(row[col.name].orEmpty(), cellMod)
 						else -> Text(
-							row[col.name].orEmpty().ifEmpty { "—" },
+							row[col.name].orEmpty().ifEmpty { "�" },
 							style = MaterialTheme.typography.bodyMedium,
 							maxLines = 1,
 							overflow = TextOverflow.Ellipsis,
@@ -414,7 +417,7 @@ fun DynamicDetailScreen(
 							Column {
 								Text(field.label, style = MaterialTheme.typography.labelMedium)
 								Text(
-									values[field.name].orEmpty().ifEmpty { "â€”" },
+									values[field.name].orEmpty().ifEmpty { "—" },
 									style = MaterialTheme.typography.bodyLarge,
 								)
 							}
@@ -593,15 +596,22 @@ private fun statusToneFor(value: String): StatusTone {
 @Composable
 private fun StatusChip(value: String, modifier: Modifier = Modifier) {
 	if (value.isBlank()) {
-		Text("—", style = MaterialTheme.typography.bodyMedium, modifier = modifier)
+		Text("�", style = MaterialTheme.typography.bodyMedium, modifier = modifier)
 		return
 	}
 	val scheme = MaterialTheme.colorScheme
-	val (container, content) = when (statusToneFor(value)) {
+	val tone = statusToneFor(value)
+	val (container, content) = when (tone) {
 		StatusTone.Positive -> Color(0xFF1B5E20).copy(alpha = 0.14f) to Color(0xFF1B5E20)
 		StatusTone.Warning  -> Color(0xFFB26A00).copy(alpha = 0.16f) to Color(0xFFB26A00)
 		StatusTone.Negative -> Color(0xFFB3261E).copy(alpha = 0.14f) to Color(0xFFB3261E)
 		StatusTone.Neutral  -> scheme.surfaceVariant to scheme.onSurfaceVariant
+	}
+	val toneIcon = when (tone) {
+		StatusTone.Positive -> Icons.Filled.CheckCircle
+		StatusTone.Warning  -> Icons.Filled.Schedule
+		StatusTone.Negative -> Icons.Filled.Cancel
+		StatusTone.Neutral  -> Icons.Filled.Circle
 	}
 	Surface(
 		color = container,
@@ -609,14 +619,20 @@ private fun StatusChip(value: String, modifier: Modifier = Modifier) {
 		shape = MaterialTheme.shapes.small,
 		modifier = modifier,
 	) {
-		Text(
-			text = value,
-			style = MaterialTheme.typography.labelMedium,
-			fontWeight = FontWeight.SemiBold,
-			maxLines = 1,
-			overflow = TextOverflow.Ellipsis,
+		Row(
+			verticalAlignment = Alignment.CenterVertically,
 			modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-		)
+		) {
+			Icon(toneIcon, contentDescription = null, modifier = Modifier.size(14.dp))
+			Spacer(Modifier.width(4.dp))
+			Text(
+				text = value,
+				style = MaterialTheme.typography.labelMedium,
+				fontWeight = FontWeight.SemiBold,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis,
+			)
+		}
 	}
 }
 
@@ -636,13 +652,26 @@ private fun progressColor(percent: Float): Color = when {
 	else -> Color(0xFFB3261E)           // error / red
 }
 
-/** Mirrors the web MudProgressLinear cell: a thin colored bar + percent label. */
+/**
+ * Parses a "used/total" fraction (e.g. "36/50") into a percent plus the raw label.
+ * Returns null when the value is not a fraction.
+ */
+private fun parseFraction(raw: String): Pair<Float, String>? {
+	val match = Regex("(\\d+(?:\\.\\d+)?)\\s*/\\s*(\\d+(?:\\.\\d+)?)").find(raw) ?: return null
+	val used = match.groupValues[1].toFloatOrNull() ?: return null
+	val total = match.groupValues[2].toFloatOrNull() ?: return null
+	if (total <= 0f) return null
+	return (used / total * 100f).coerceIn(0f, 100f) to "${match.groupValues[1]}/${match.groupValues[2]}"
+}
+
+/** Mirrors the web MudProgressLinear cell: a thin colored bar + label ("60%" or "36/50"). */
 @Composable
 private fun ProgressBarCell(value: String, modifier: Modifier = Modifier) {
-	val percent = parsePercent(value)
+	val fraction = parseFraction(value)
+	val percent = fraction?.first ?: parsePercent(value)
 	if (percent == null) {
 		Text(
-			value.ifEmpty { "—" },
+			value.ifEmpty { "�" },
 			style = MaterialTheme.typography.bodyMedium,
 			maxLines = 1,
 			overflow = TextOverflow.Ellipsis,
@@ -650,6 +679,7 @@ private fun ProgressBarCell(value: String, modifier: Modifier = Modifier) {
 		)
 		return
 	}
+	val label = fraction?.second ?: "${percent.toInt()}%"
 	val color = progressColor(percent)
 	Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
 		LinearProgressIndicator(
@@ -660,10 +690,40 @@ private fun ProgressBarCell(value: String, modifier: Modifier = Modifier) {
 		)
 		Spacer(Modifier.width(8.dp))
 		Text(
-			"${percent.toInt()}%",
+			label,
 			style = MaterialTheme.typography.labelMedium,
 			maxLines = 1,
 		)
+	}
+}
+
+/**
+ * Mirrors the web MudRating star cell: renders up to 5 filled/half/empty stars
+ * from a numeric value like "4.5" or "3". Non-numeric values fall back to text.
+ */
+@Composable
+private fun StarRatingCell(value: String, modifier: Modifier = Modifier) {
+	val rating = Regex("-?\\d+(\\.\\d+)?").find(value)?.value?.toFloatOrNull()
+	if (rating == null) {
+		Text(
+			value.ifEmpty { "�" },
+			style = MaterialTheme.typography.bodyMedium,
+			maxLines = 1,
+			overflow = TextOverflow.Ellipsis,
+			modifier = modifier,
+		)
+		return
+	}
+	val amber = Color(0xFFF6A609)
+	Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+		for (i in 1..5) {
+			val icon = when {
+				rating >= i -> Icons.Filled.Star
+				rating >= i - 0.5f -> Icons.AutoMirrored.Filled.StarHalf
+				else -> Icons.Filled.StarBorder
+			}
+			Icon(icon, contentDescription = null, tint = amber, modifier = Modifier.size(16.dp))
+		}
 	}
 }
 
@@ -673,7 +733,7 @@ private fun PercentRing(value: String, modifier: Modifier = Modifier) {
 	val percent = parsePercent(value)
 	if (percent == null) {
 		Text(
-			value.ifEmpty { "—" },
+			value.ifEmpty { "�" },
 			style = MaterialTheme.typography.bodyMedium,
 			maxLines = 1,
 			overflow = TextOverflow.Ellipsis,
@@ -697,3 +757,6 @@ private fun PercentRing(value: String, modifier: Modifier = Modifier) {
 		)
 	}
 }
+
+
+

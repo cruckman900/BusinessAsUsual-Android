@@ -4,6 +4,8 @@ package work.businessasusual.domain.model
 data class ModuleUi(
 	val moduleId: String,
 	val moduleName: String,
+	val displayName: String = moduleName,
+
 	val version: String,
 	val navigation: NavigationMap,
 	val screens: Map<String, ScreenSpec> = emptyMap(),
@@ -170,5 +172,7 @@ object FieldTypes {
 	const val TEXT = "text"; const val EMAIL = "email"; const val PHONE = "phone"
 	const val NUMBER = "number"; const val DATE = "date"; const val SELECT = "select"
 	const val MULTISELECT = "multiselect"; const val IMAGE = "image"; const val BADGE = "badge"
-	const val PROGRESS = "progress"; const val PERCENT = "percent"
+	const val PROGRESS = "progress"; const val PERCENT = "percent"; const val RATING = "rating"
 }
+
+

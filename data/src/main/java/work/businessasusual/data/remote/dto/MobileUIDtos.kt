@@ -6,6 +6,8 @@ import kotlinx.serialization.Serializable
 data class MobileUiSpecDto(
 	val moduleId: String = "",
 	val moduleName: String = "",
+	val displayName: String = "",
+
 	val version: String = "",
 	val navigation: NavigationMapDto = NavigationMapDto(),
 	val screens: Map<String, ScreenDto> = emptyMap(),
@@ -219,3 +221,4 @@ data class ValidationRulesDto(
 	val errorMessages: Map<String, String> = emptyMap(),
 	val customValidationEndpoint: String? = null,
 )
+

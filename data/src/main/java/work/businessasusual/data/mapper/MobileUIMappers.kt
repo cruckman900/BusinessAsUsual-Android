@@ -6,6 +6,7 @@ import work.businessasusual.domain.model.*
 fun MobileUiSpecDto.toDomain() = ModuleUi(
 	moduleId = moduleId,
 	moduleName = moduleName,
+	displayName = displayName.ifBlank { moduleName },
 	version = version,
 	navigation = navigation.toDomain(),
 	screens = screens.mapNotNull { (key, dto) -> dto.toDomain()?.let { key to it } }.toMap(),
@@ -85,3 +86,5 @@ fun ValidationRulesDto.toDomain() = FormValidation(errorMessages, customValidati
 fun ActionButtonDto.toDomain() = ScreenAction(
 	id, label, icon, action, navigateTo, apiEndpoint, requiresConfirmation, confirmationMessage,
 )
+
+
