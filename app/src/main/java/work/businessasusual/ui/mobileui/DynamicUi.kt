@@ -24,6 +24,7 @@ import org.koin.core.parameter.parametersOf
 fun MobileUiScreen(
 	moduleId: String,
 	onScreenTitleChange: (String?) -> Unit = {},
+	onModuleNameChange: (String) -> Unit = {},
 	viewModel: MobileUiViewModel = koinViewModel { parametersOf(moduleId) },
 ) {
 	val state by viewModel.state.collectAsStateWithLifecycle()
@@ -44,12 +45,17 @@ fun MobileUiScreen(
 				Button(onClick = viewModel::load) { Text("Retry") }
 			}
 
-		is MobileUiState.Success -> ModuleContent(
-			module = s.module,
-			screenData = viewModel.screenData.collectAsStateWithLifecycle().value,
-			onScreenSelected = viewModel::loadScreenData,
-			onScreenTitleChange = onScreenTitleChange,
-		)
+		is MobileUiState.Success -> {
+			// Surface the backend-provided display name (e.g. "CRM", "HR") verbatim
+			// so callers can render it without any case transformation.
+			LaunchedEffect(s.module.moduleName) { onModuleNameChange(s.module.moduleName) }
+			ModuleContent(
+				module = s.module,
+				screenData = viewModel.screenData.collectAsStateWithLifecycle().value,
+				onScreenSelected = viewModel::loadScreenData,
+				onScreenTitleChange = onScreenTitleChange,
+			)
+		}
 	}
 }
 

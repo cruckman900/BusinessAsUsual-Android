@@ -24,7 +24,9 @@ fun ModuleHostScreen(
     onThemeChange: (String) -> Unit,
     onDarkThemeChange: (Boolean) -> Unit,
 ) {
-    val title = moduleId.replaceFirstChar { it.uppercase() }
+    // Title comes from the backend-provided display name (e.g. "CRM", "HR") verbatim.
+    // Until the contract loads, fall back to the raw module key without case gymnastics.
+    var title by remember(moduleId) { mutableStateOf(moduleId) }
     var screenTitle by remember(moduleId) { mutableStateOf<String?>(null) }
     val breadcrumbs = buildList {
         add("Dashboard")
@@ -44,6 +46,7 @@ fun ModuleHostScreen(
         MobileUiScreen(
             moduleId = moduleId,
             onScreenTitleChange = { screenTitle = it },
+            onModuleNameChange = { title = it.ifBlank { moduleId } },
         )
     }
 }
