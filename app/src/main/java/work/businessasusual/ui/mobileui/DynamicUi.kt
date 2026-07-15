@@ -69,10 +69,10 @@ private fun ModuleContent(
 	onScreenSelected: (String) -> Unit,
 	onScreenTitleChange: (String?) -> Unit = {},
 ) {
-	// Default to the first nav item's screen, falling back to the first available screen.
-	val defaultScreenKey = module.navigation.items.firstOrNull { module.screens.containsKey(it.screen) }?.screen
-		?: module.screens.keys.firstOrNull()
-	var selectedScreen by remember(module.moduleId) { mutableStateOf(defaultScreenKey) }
+	// The module opens on an "Overview" landing that mirrors the web module dashboard
+	// (a grid of section cards) instead of jumping straight to the first list screen
+	// (e.g. Employees / Leads). OVERVIEW_KEY is a client-side sentinel, not a contract screen.
+	var selectedScreen by remember(module.moduleId) { mutableStateOf(OVERVIEW_KEY) }
 
 	// Fetch rows whenever the selected list screen changes (cached in the ViewModel).
 	LaunchedEffect(selectedScreen) {
@@ -83,7 +83,10 @@ private fun ModuleContent(
 	// Report the human-readable label of the current screen so the scaffold can
 	// render a deeper breadcrumb trail (Dashboard > Module > Screen).
 	LaunchedEffect(selectedScreen, module.moduleId) {
-		val label = module.navigation.items.firstOrNull { it.screen == selectedScreen }?.label
+		val label = when (selectedScreen) {
+			OVERVIEW_KEY -> null
+			else -> module.navigation.items.firstOrNull { it.screen == selectedScreen }?.label
+		}
 		onScreenTitleChange(label)
 	}
 
@@ -97,6 +100,13 @@ private fun ModuleContent(
 			Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
 			horizontalArrangement = Arrangement.spacedBy(8.dp),
 		) {
+			FilterChip(
+				selected = selectedScreen == OVERVIEW_KEY,
+				enabled = true,
+				onClick = { selectedScreen = OVERVIEW_KEY },
+				label = { Text("Overview") },
+				leadingIcon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
+			)
 			module.navigation.items.forEach { item ->
 				val enabled = module.screens.containsKey(item.screen)
 				FilterChip(
@@ -110,6 +120,14 @@ private fun ModuleContent(
 		}
 
 		HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+		if (selectedScreen == OVERVIEW_KEY) {
+			ModuleOverview(
+				module = module,
+				onOpenScreen = { screenKey -> selectedScreen = screenKey },
+			)
+			return@Column
+		}
 
 		when (val screen = selectedScreen?.let { module.screens[it] }) {
 			is ListScreenSpec -> DynamicListScreen(
@@ -142,6 +160,85 @@ private fun ModuleContent(
 			)
 			null -> Box(Modifier.fillMaxWidth().padding(24.dp), Alignment.Center) {
 				Text("No screen available for this section.", style = MaterialTheme.typography.bodyMedium)
+			}
+		}
+	}
+}
+
+/* ---------------- MODULE OVERVIEW (landing dashboard) ---------------- */
+
+/** Client-side sentinel key for the module Overview landing screen. */
+private const val OVERVIEW_KEY = "__overview__"
+
+/**
+ * Mirrors the web module dashboard: a heading plus a card grid where each card
+ * represents a navigable section of the module. Tapping a card opens that
+ * section's contract screen in-place.
+ */
+@Composable
+private fun ModuleOverview(
+	module: ModuleUi,
+	onOpenScreen: (String) -> Unit,
+) {
+	Column(Modifier.fillMaxWidth().padding(16.dp)) {
+		Text(
+			"${module.displayName} Overview",
+			style = MaterialTheme.typography.titleLarge,
+		)
+		Spacer(Modifier.height(4.dp))
+		Text(
+			"Choose a section to get started",
+			style = MaterialTheme.typography.bodyMedium,
+			color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+		)
+		Spacer(Modifier.height(16.dp))
+
+		module.navigation.items.forEach { item ->
+			val enabled = module.screens.containsKey(item.screen)
+			Card(
+				modifier = Modifier
+					.fillMaxWidth()
+					.padding(vertical = 6.dp)
+					.then(
+						if (enabled) Modifier.clickable { onOpenScreen(item.screen) } else Modifier
+					),
+				shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+				colors = CardDefaults.cardColors(
+					containerColor = MaterialTheme.colorScheme.surface,
+					contentColor = MaterialTheme.colorScheme.onSurface,
+				),
+				elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+			) {
+				Row(
+					Modifier.fillMaxWidth().padding(16.dp),
+					verticalAlignment = Alignment.CenterVertically,
+				) {
+					Icon(
+						iconFor(item.icon),
+						contentDescription = null,
+						tint = if (enabled) MaterialTheme.colorScheme.primary
+						else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+						modifier = Modifier.size(32.dp),
+					)
+					Spacer(Modifier.width(16.dp))
+					Column(Modifier.weight(1f)) {
+						Text(item.label, style = MaterialTheme.typography.titleMedium)
+						if (!enabled) {
+							Text(
+								"Coming soon",
+								style = MaterialTheme.typography.bodySmall,
+								color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+							)
+						}
+					}
+					if (enabled) {
+						Icon(
+							Icons.Filled.KeyboardArrowRight,
+							contentDescription = null,
+							tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+						)
+					}
+				}
 			}
 		}
 	}
