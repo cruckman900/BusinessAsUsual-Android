@@ -170,4 +170,5 @@ object FieldTypes {
 	const val TEXT = "text"; const val EMAIL = "email"; const val PHONE = "phone"
 	const val NUMBER = "number"; const val DATE = "date"; const val SELECT = "select"
 	const val MULTISELECT = "multiselect"; const val IMAGE = "image"; const val BADGE = "badge"
+	const val PROGRESS = "progress"; const val PERCENT = "percent"
 }

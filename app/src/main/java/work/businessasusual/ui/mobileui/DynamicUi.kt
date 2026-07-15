@@ -277,10 +277,11 @@ private fun ListAsCards(
 								color = MaterialTheme.colorScheme.onSurfaceVariant,
 								modifier = Modifier.width(120.dp),
 							)
-							if (col.type == FieldTypes.BADGE) {
-								StatusChip(row[col.name].orEmpty())
-							} else {
-								Text(
+							when (col.type) {
+								FieldTypes.BADGE -> StatusChip(row[col.name].orEmpty())
+								FieldTypes.PROGRESS -> ProgressBarCell(row[col.name].orEmpty(), Modifier.weight(1f))
+								FieldTypes.PERCENT -> PercentRing(row[col.name].orEmpty())
+								else -> Text(
 									row[col.name].orEmpty().ifEmpty { "—" },
 									style = MaterialTheme.typography.bodyMedium,
 									modifier = Modifier.weight(1f),
@@ -328,10 +329,11 @@ private fun ListAsTable(
 			Row(Modifier.padding(vertical = 10.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
 				columns.forEach { col ->
 					val cellMod = Modifier.width(col.width.dp).padding(horizontal = 8.dp)
-					if (col.type == FieldTypes.BADGE) {
-						StatusChip(row[col.name].orEmpty(), modifier = cellMod)
-					} else {
-						Text(
+					when (col.type) {
+						FieldTypes.BADGE -> StatusChip(row[col.name].orEmpty(), modifier = cellMod)
+						FieldTypes.PROGRESS -> ProgressBarCell(row[col.name].orEmpty(), cellMod)
+						FieldTypes.PERCENT -> PercentRing(row[col.name].orEmpty(), cellMod)
+						else -> Text(
 							row[col.name].orEmpty().ifEmpty { "—" },
 							style = MaterialTheme.typography.bodyMedium,
 							maxLines = 1,
@@ -608,6 +610,84 @@ private fun StatusChip(value: String, modifier: Modifier = Modifier) {
 			maxLines = 1,
 			overflow = TextOverflow.Ellipsis,
 			modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+		)
+	}
+}
+
+/* ---------------- PROGRESS / PERCENT CELLS ---------------- */
+
+/** Parses a leading numeric percent out of strings like "60%", "60", "  75 %". Returns null when absent. */
+private fun parsePercent(raw: String): Float? {
+	val match = Regex("-?\\d+(\\.\\d+)?").find(raw) ?: return null
+	return match.value.toFloatOrNull()?.coerceIn(0f, 100f)
+}
+
+/** Web parity thresholds: >=80 green, >=50 blue, >=25 amber, else red. */
+private fun progressColor(percent: Float): Color = when {
+	percent >= 80f -> Color(0xFF1B5E20) // success / green
+	percent >= 50f -> Color(0xFF0D66C2) // info / blue
+	percent >= 25f -> Color(0xFFB26A00) // warning / amber
+	else -> Color(0xFFB3261E)           // error / red
+}
+
+/** Mirrors the web MudProgressLinear cell: a thin colored bar + percent label. */
+@Composable
+private fun ProgressBarCell(value: String, modifier: Modifier = Modifier) {
+	val percent = parsePercent(value)
+	if (percent == null) {
+		Text(
+			value.ifEmpty { "—" },
+			style = MaterialTheme.typography.bodyMedium,
+			maxLines = 1,
+			overflow = TextOverflow.Ellipsis,
+			modifier = modifier,
+		)
+		return
+	}
+	val color = progressColor(percent)
+	Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+		LinearProgressIndicator(
+			progress = { percent / 100f },
+			color = color,
+			trackColor = color.copy(alpha = 0.18f),
+			modifier = Modifier.weight(1f).height(8.dp),
+		)
+		Spacer(Modifier.width(8.dp))
+		Text(
+			"${percent.toInt()}%",
+			style = MaterialTheme.typography.labelMedium,
+			maxLines = 1,
+		)
+	}
+}
+
+/** Mirrors the web MudProgressCircular value cell: a small determinate ring with centered percent. */
+@Composable
+private fun PercentRing(value: String, modifier: Modifier = Modifier) {
+	val percent = parsePercent(value)
+	if (percent == null) {
+		Text(
+			value.ifEmpty { "—" },
+			style = MaterialTheme.typography.bodyMedium,
+			maxLines = 1,
+			overflow = TextOverflow.Ellipsis,
+			modifier = modifier,
+		)
+		return
+	}
+	val color = progressColor(percent)
+	Box(modifier = modifier, contentAlignment = Alignment.Center) {
+		CircularProgressIndicator(
+			progress = { percent / 100f },
+			color = color,
+			trackColor = color.copy(alpha = 0.18f),
+			strokeWidth = 3.dp,
+			modifier = Modifier.size(40.dp),
+		)
+		Text(
+			"${percent.toInt()}",
+			style = MaterialTheme.typography.labelSmall,
+			fontWeight = FontWeight.SemiBold,
 		)
 	}
 }
