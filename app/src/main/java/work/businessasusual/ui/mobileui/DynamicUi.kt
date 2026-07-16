@@ -142,7 +142,13 @@ private fun ModuleContent(
 				},
 			)
 			is DetailScreenSpec -> DynamicDetailScreen(spec = screen)
-			is FormScreenSpec -> DynamicFormScreen(spec = screen)
+			is FormScreenSpec -> DynamicFormScreen(
+				spec = screen,
+				onCancel = { action ->
+					val target = resolveTargetScreenKey(action.navigateTo, selectedScreen, module.screens)
+					if (target != null) selectedScreen = target
+				},
+			)
 			is TimelineScreenSpec -> DynamicTimelineScreen(
 				spec = screen,
 				rows = screenData[selectedScreen].orEmpty(),
@@ -191,22 +197,28 @@ private fun resolveTargetScreenKey(
 		?.removeSuffix("-list")
 		?.takeIf { it.isNotBlank() && it != currentScreenKey }
 
-	val wantsForm = last == "new" || last == "create" || last == "edit"
-	val wantsDetail = !wantsForm // view routes end in the record id
-
 	fun keyExists(key: String) = screens.containsKey(key)
 
-	if (baseNoun != null) {
-		if (wantsForm && keyExists("$baseNoun-form")) return "$baseNoun-form"
-		if (wantsDetail && keyExists("$baseNoun-detail")) return "$baseNoun-detail"
-	}
-
-	// Fallback: infer the noun from the route itself ("employees" -> "employee").
+	// Infer the noun from the route itself ("employees" -> "employee").
 	val routeNoun = segments.firstOrNull { it != "hr" && it != "crm" }
 		?.lowercase()
 		?.removeSuffix("s")
+
+	val wantsForm = last == "new" || last == "create" || last == "edit"
+	// A collection route (e.g. "/hr/employees") ends in the plural noun itself
+	// with no trailing id/verb, so it maps back to the "-list" screen (Cancel).
+	val wantsList = !wantsForm && routeNoun != null && last == "${routeNoun}s"
+	val wantsDetail = !wantsForm && !wantsList // view routes end in the record id
+
+	if (baseNoun != null) {
+		if (wantsForm && keyExists("$baseNoun-form")) return "$baseNoun-form"
+		if (wantsList && keyExists("$baseNoun-list")) return "$baseNoun-list"
+		if (wantsDetail && keyExists("$baseNoun-detail")) return "$baseNoun-detail"
+	}
+
 	if (routeNoun != null) {
 		if (wantsForm && keyExists("$routeNoun-form")) return "$routeNoun-form"
+		if (wantsList && keyExists("$routeNoun-list")) return "$routeNoun-list"
 		if (wantsDetail && keyExists("$routeNoun-detail")) return "$routeNoun-detail"
 	}
 
