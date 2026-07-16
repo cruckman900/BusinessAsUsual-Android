@@ -137,9 +137,7 @@ private fun ModuleContent(
 				onAction = { action ->
 					// If the action targets another screen in this module, navigate to it
 					// in-place so View/Edit surface the detail/form contract screen.
-					val target = action.navigateTo
-						?.substringAfterLast('/')
-						?.takeIf { module.screens.containsKey(it) }
+					val target = resolveTargetScreenKey(action.navigateTo, selectedScreen, module.screens)
 					if (target != null) selectedScreen = target
 				},
 			)
@@ -149,9 +147,7 @@ private fun ModuleContent(
 				spec = screen,
 				rows = screenData[selectedScreen].orEmpty(),
 				onAction = { action ->
-					val target = action.navigateTo
-						?.substringAfterLast('/')
-						?.takeIf { module.screens.containsKey(it) }
+					val target = resolveTargetScreenKey(action.navigateTo, selectedScreen, module.screens)
 					if (target != null) selectedScreen = target
 				},
 			)
@@ -166,7 +162,56 @@ private fun ModuleContent(
 	}
 }
 
-/* ---------------- MODULE OVERVIEW (landing dashboard) ---------------- */
+
+/**
+ * Resolves a web-style [navigateTo] route (e.g. "/hr/employees/new",
+ * "/hr/employees/{id}", "/hr/employees/{id}/edit") to the in-module screen key
+ * that renders it. Screen keys are singular contract nouns ("employee-detail",
+ * "employee-form"), while routes are plural REST paths, so a naive last-segment
+ * match ("new"/"edit"/an id) never lines up. We derive the base noun from the
+ * current *-list screen key and pick the "-form" screen for create/edit routes
+ * and the "-detail" screen for view routes, falling back to any exact key match.
+ */
+
+private fun resolveTargetScreenKey(
+	navigateTo: String?,
+	currentScreenKey: String?,
+	screens: Map<String, ScreenSpec>,
+): String? {
+	if (navigateTo.isNullOrBlank()) return null
+
+	// Exact key match (in case the backend ever sends a screen key directly).
+	screens.keys.firstOrNull { it == navigateTo }?.let { return it }
+
+	val segments = navigateTo.trim('/').split('/').filter { it.isNotBlank() }
+	val last = segments.lastOrNull()?.lowercase()
+
+	// Base noun taken from the current list screen: "employee-list" -> "employee".
+	val baseNoun = currentScreenKey
+		?.removeSuffix("-list")
+		?.takeIf { it.isNotBlank() && it != currentScreenKey }
+
+	val wantsForm = last == "new" || last == "create" || last == "edit"
+	val wantsDetail = !wantsForm // view routes end in the record id
+
+	fun keyExists(key: String) = screens.containsKey(key)
+
+	if (baseNoun != null) {
+		if (wantsForm && keyExists("$baseNoun-form")) return "$baseNoun-form"
+		if (wantsDetail && keyExists("$baseNoun-detail")) return "$baseNoun-detail"
+	}
+
+	// Fallback: infer the noun from the route itself ("employees" -> "employee").
+	val routeNoun = segments.firstOrNull { it != "hr" && it != "crm" }
+		?.lowercase()
+		?.removeSuffix("s")
+	if (routeNoun != null) {
+		if (wantsForm && keyExists("$routeNoun-form")) return "$routeNoun-form"
+		if (wantsDetail && keyExists("$routeNoun-detail")) return "$routeNoun-detail"
+	}
+
+	return null
+}
 
 /** Client-side sentinel key for the module Overview landing screen. */
 private const val OVERVIEW_KEY = "__overview__"
@@ -547,7 +592,7 @@ private fun ListAsCards(
 						verticalAlignment = Alignment.CenterVertically,
 					) {
 						Text(
-							titleCol?.let { row[it.name].orEmpty() }.orEmpty().ifEmpty { "—" },
+							titleCol?.let { row[it.name].orEmpty() }.orEmpty().ifEmpty { "â€”" },
 							style = MaterialTheme.typography.titleMedium,
 							fontWeight = FontWeight.SemiBold,
 							maxLines = 1,
@@ -574,7 +619,7 @@ private fun ListAsCards(
 								FieldTypes.PERCENT -> PercentRing(row[col.name].orEmpty())
 					FieldTypes.RATING -> StarRatingCell(row[col.name].orEmpty())
 								else -> Text(
-									row[col.name].orEmpty().ifEmpty { "—" },
+									row[col.name].orEmpty().ifEmpty { "â€”" },
 									style = MaterialTheme.typography.bodyMedium,
 									modifier = Modifier.weight(1f),
 								)
@@ -627,7 +672,7 @@ private fun ListAsTable(
 						FieldTypes.PERCENT -> PercentRing(row[col.name].orEmpty(), cellMod)
 					FieldTypes.RATING -> StarRatingCell(row[col.name].orEmpty(), cellMod)
 						else -> Text(
-							row[col.name].orEmpty().ifEmpty { "—" },
+							row[col.name].orEmpty().ifEmpty { "â€”" },
 							style = MaterialTheme.typography.bodyMedium,
 							maxLines = 1,
 							overflow = TextOverflow.Ellipsis,
@@ -880,7 +925,7 @@ private fun statusToneFor(value: String): StatusTone {
 @Composable
 private fun StatusChip(value: String, modifier: Modifier = Modifier) {
 	if (value.isBlank()) {
-		Text("—", style = MaterialTheme.typography.bodyMedium, modifier = modifier)
+		Text("â€”", style = MaterialTheme.typography.bodyMedium, modifier = modifier)
 		return
 	}
 	val scheme = MaterialTheme.colorScheme
@@ -955,7 +1000,7 @@ private fun ProgressBarCell(value: String, modifier: Modifier = Modifier) {
 	val percent = fraction?.first ?: parsePercent(value)
 	if (percent == null) {
 		Text(
-			value.ifEmpty { "—" },
+			value.ifEmpty { "â€”" },
 			style = MaterialTheme.typography.bodyMedium,
 			maxLines = 1,
 			overflow = TextOverflow.Ellipsis,
@@ -990,7 +1035,7 @@ private fun StarRatingCell(value: String, modifier: Modifier = Modifier) {
 	val rating = Regex("-?\\d+(\\.\\d+)?").find(value)?.value?.toFloatOrNull()
 	if (rating == null) {
 		Text(
-			value.ifEmpty { "—" },
+			value.ifEmpty { "â€”" },
 			style = MaterialTheme.typography.bodyMedium,
 			maxLines = 1,
 			overflow = TextOverflow.Ellipsis,
@@ -1017,7 +1062,7 @@ private fun PercentRing(value: String, modifier: Modifier = Modifier) {
 	val percent = parsePercent(value)
 	if (percent == null) {
 		Text(
-			value.ifEmpty { "—" },
+			value.ifEmpty { "â€”" },
 			style = MaterialTheme.typography.bodyMedium,
 			maxLines = 1,
 			overflow = TextOverflow.Ellipsis,
