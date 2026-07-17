@@ -38,8 +38,31 @@ data class ScreenDto(
 	val itemFields: TimelineItemFieldMapDto = TimelineItemFieldMapDto(),
 	// list + timeline
 	val stats: List<StatCardDto> = emptyList(),
+	// board
+	val groupByField: String = "",
+	val cardLayout: CardLayoutDto = CardLayoutDto(),
+	val enableDragToMove: Boolean = false,
+	val moveEndpoint: String? = null,
+	// card-collection
+	val preferredColumns: Int = 1,
+	val cardActions: List<ActionButtonDto> = emptyList(),
+	// board + card-collection fallback for list-only clients
+	val fallbackColumns: List<ColumnDefinitionDto> = emptyList(),
 	// shared
 	val actions: List<ActionButtonDto> = emptyList(),
+)
+
+@Serializable
+data class CardLayoutDto(
+	val titleField: String = "",
+	val subtitleField: String? = null,
+	val previewField: String? = null,
+	val valueField: String? = null,
+	val progressField: String? = null,
+	val badgeField: String? = null,
+	val statusField: String? = null,
+	val metaField: String? = null,
+	val iconField: String? = null,
 )
 
 @Serializable
@@ -157,6 +180,10 @@ data class ColumnDefinitionDto(
 	val type: String = "text",
 	val sortable: Boolean = false,
 	val width: Int = 100,
+	// Board columns share the "columns" JSON key but carry these instead of name/type.
+	val id: String = "",
+	val color: String? = null,
+	val summaryLabel: String? = null,
 )
 
 @Serializable

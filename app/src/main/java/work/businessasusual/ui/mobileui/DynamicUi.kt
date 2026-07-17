@@ -78,7 +78,10 @@ private fun ModuleContent(
 	// Fetch rows whenever the selected list screen changes (cached in the ViewModel).
 	LaunchedEffect(selectedScreen) {
 		val key = selectedScreen ?: return@LaunchedEffect
-		if (module.screens[key] is ListScreenSpec || module.screens[key] is TimelineScreenSpec) onScreenSelected(key)
+		val screen = module.screens[key]
+		if (screen is ListScreenSpec || screen is TimelineScreenSpec ||
+			screen is BoardScreenSpec || screen is CardCollectionScreenSpec
+		) onScreenSelected(key)
 	}
 
 	// Report the human-readable label of the current screen so the scaffold can
@@ -160,6 +163,22 @@ private fun ModuleContent(
 			is ChartScreenSpec -> ChartDashboard(
 				charts = screen.charts,
 				emptyMessage = screen.emptyStateMessage,
+			)
+			is BoardScreenSpec -> DynamicBoardScreen(
+				spec = screen,
+				rows = screenData[selectedScreen].orEmpty(),
+				onAction = { action ->
+					val target = resolveTargetScreenKey(action.navigateTo, selectedScreen, module.screens)
+					if (target != null) selectedScreen = target
+				},
+			)
+			is CardCollectionScreenSpec -> DynamicCardCollectionScreen(
+				spec = screen,
+				rows = screenData[selectedScreen].orEmpty(),
+				onAction = { action ->
+					val target = resolveTargetScreenKey(action.navigateTo, selectedScreen, module.screens)
+					if (target != null) selectedScreen = target
+				},
 			)
 			null -> Box(Modifier.fillMaxWidth().padding(24.dp), Alignment.Center) {
 				Text("No screen available for this section.", style = MaterialTheme.typography.bodyMedium)
@@ -472,6 +491,321 @@ private fun TimelineItemRow(
 			}
 		}
 	}
+}
+
+/* ---------------- BOARD (kanban) ---------------- */
+
+@Composable
+fun DynamicBoardScreen(
+	spec: BoardScreenSpec,
+	rows: List<Map<String, String>> = emptyList(),
+	onAction: (ScreenAction) -> Unit = {},
+) {
+	var query by remember { mutableStateOf("") }
+	Column(
+		Modifier.fillMaxWidth().padding(16.dp),
+		verticalArrangement = Arrangement.spacedBy(12.dp),
+	) {
+		Text(spec.title, style = MaterialTheme.typography.headlineSmall)
+
+		if (spec.enableSearch) {
+			OutlinedTextField(
+				value = query,
+				onValueChange = { query = it },
+				leadingIcon = { Icon(Icons.Default.Search, null) },
+				placeholder = { Text(spec.searchPlaceholder) },
+				singleLine = true,
+				modifier = Modifier.fillMaxWidth(),
+			)
+		}
+
+		spec.actions.firstOrNull { it.action == ActionTypes.NAVIGATE && it.id == "add" }?.let { add ->
+			Button(onClick = { onAction(add) }) {
+				Icon(iconFor(add.icon), null); Spacer(Modifier.width(6.dp)); Text(add.label)
+			}
+		}
+
+		val filtered = if (query.isBlank()) rows else rows.filter { row ->
+			row.values.any { it.contains(query, ignoreCase = true) }
+		}
+
+		if (filtered.isEmpty()) {
+			Text(spec.emptyStateMessage, style = MaterialTheme.typography.bodyMedium)
+			return@Column
+		}
+
+		// Group rows into the ordered columns by the group field; unknown values
+		// fall into a trailing "Other" lane so nothing is dropped.
+		val known = spec.columns.map { it.id }.toSet()
+		val grouped = filtered.groupBy { it[spec.groupByField].orEmpty() }
+		val lanes = buildList {
+			spec.columns.forEach { col -> add(col to grouped[col.id].orEmpty()) }
+			val others = filtered.filter { (it[spec.groupByField].orEmpty()) !in known }
+			if (others.isNotEmpty()) add(BoardColumn(id = "other", label = "Other") to others)
+		}
+
+		Row(
+			Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+			horizontalArrangement = Arrangement.spacedBy(12.dp),
+		) {
+			lanes.forEach { (col, laneRows) ->
+				BoardLane(column = col, rows = laneRows, layout = spec.cardLayout)
+			}
+		}
+	}
+}
+
+/** A single kanban column: colored header with count + a vertical stack of cards. */
+@Composable
+private fun BoardLane(
+	column: BoardColumn,
+	rows: List<Map<String, String>>,
+	layout: BoardCardLayout,
+) {
+	val accent = column.color?.let { parseHexColor(it) } ?: MaterialTheme.colorScheme.primary
+	Column(
+		Modifier
+			.width(280.dp)
+			.clip(MaterialTheme.shapes.medium)
+			.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+			.padding(10.dp),
+		verticalArrangement = Arrangement.spacedBy(10.dp),
+	) {
+		Row(verticalAlignment = Alignment.CenterVertically) {
+			Box(
+				Modifier
+					.size(10.dp)
+					.clip(CircleShape)
+					.background(accent),
+			)
+			Spacer(Modifier.width(8.dp))
+			Text(
+				column.label,
+				style = MaterialTheme.typography.titleSmall,
+				fontWeight = FontWeight.SemiBold,
+				modifier = Modifier.weight(1f),
+			)
+			Surface(
+				color = accent.copy(alpha = 0.14f),
+				contentColor = accent,
+				shape = CircleShape,
+			) {
+				Text(
+					rows.size.toString(),
+					style = MaterialTheme.typography.labelMedium,
+					fontWeight = FontWeight.Bold,
+					modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+				)
+			}
+		}
+
+		if (rows.isEmpty()) {
+			Text(
+				"—",
+				style = MaterialTheme.typography.bodySmall,
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+			)
+		} else {
+			rows.forEach { row -> BoardCard(row = row, layout = layout, accent = accent) }
+		}
+	}
+}
+
+/** A rich opportunity card: title, subtitle, prominent value, progress + badge. */
+@Composable
+private fun BoardCard(
+	row: Map<String, String>,
+	layout: BoardCardLayout,
+	accent: Color,
+) {
+	ElevatedCard(Modifier.fillMaxWidth()) {
+		Column(
+			Modifier.fillMaxWidth().padding(12.dp),
+			verticalArrangement = Arrangement.spacedBy(6.dp),
+		) {
+			Text(
+				row[layout.titleField].orEmpty().ifEmpty { "—" },
+				style = MaterialTheme.typography.titleSmall,
+				fontWeight = FontWeight.SemiBold,
+				maxLines = 2,
+				overflow = TextOverflow.Ellipsis,
+			)
+			layout.subtitleField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let {
+				Text(
+					it,
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.onSurfaceVariant,
+				)
+			}
+			layout.valueField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let {
+				Text(it, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = accent)
+			}
+			layout.progressField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let {
+				ProgressBarCell(it, Modifier.fillMaxWidth())
+			}
+			Row(
+				Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.SpaceBetween,
+				verticalAlignment = Alignment.CenterVertically,
+			) {
+				layout.badgeField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let { StatusChip(it) }
+				layout.metaField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let {
+					Row(verticalAlignment = Alignment.CenterVertically) {
+						Icon(Icons.Filled.Schedule, null, Modifier.size(13.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+						Spacer(Modifier.width(4.dp))
+						Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					}
+				}
+			}
+		}
+	}
+}
+
+/* ---------------- CARD COLLECTION ---------------- */
+
+@Composable
+fun DynamicCardCollectionScreen(
+	spec: CardCollectionScreenSpec,
+	rows: List<Map<String, String>> = emptyList(),
+	onAction: (ScreenAction) -> Unit = {},
+) {
+	var query by remember { mutableStateOf("") }
+	Column(
+		Modifier.fillMaxWidth().padding(16.dp),
+		verticalArrangement = Arrangement.spacedBy(12.dp),
+	) {
+		Text(spec.title, style = MaterialTheme.typography.headlineSmall)
+
+		if (spec.enableSearch) {
+			OutlinedTextField(
+				value = query,
+				onValueChange = { query = it },
+				leadingIcon = { Icon(Icons.Default.Search, null) },
+				placeholder = { Text(spec.searchPlaceholder) },
+				singleLine = true,
+				modifier = Modifier.fillMaxWidth(),
+			)
+		}
+
+		if (spec.enableFilter) spec.filters.forEach { DynamicFilter(it) }
+
+		spec.actions.firstOrNull { it.action == ActionTypes.NAVIGATE && it.id == "add" }?.let { add ->
+			Button(onClick = { onAction(add) }) {
+				Icon(iconFor(add.icon), null); Spacer(Modifier.width(6.dp)); Text(add.label)
+			}
+		}
+
+		var pendingConfirm by remember { mutableStateOf<ScreenAction?>(null) }
+		pendingConfirm?.let { action ->
+			AlertDialog(
+				onDismissRequest = { pendingConfirm = null },
+				title = { Text(action.label) },
+				text = { Text(action.confirmationMessage ?: "Are you sure?") },
+				confirmButton = {
+					TextButton(onClick = { onAction(action); pendingConfirm = null }) { Text(action.label) }
+				},
+				dismissButton = {
+					TextButton(onClick = { pendingConfirm = null }) { Text("Cancel") }
+				},
+			)
+		}
+		val onCardAction: (ScreenAction) -> Unit = { action ->
+			if (action.requiresConfirmation) pendingConfirm = action else onAction(action)
+		}
+
+		val filtered = if (query.isBlank()) rows else rows.filter { row ->
+			row.values.any { it.contains(query, ignoreCase = true) }
+		}
+
+		if (filtered.isEmpty()) {
+			Text(spec.emptyStateMessage, style = MaterialTheme.typography.bodyMedium)
+		} else {
+			Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+				filtered.forEach { row ->
+					PreviewCard(row = row, layout = spec.cardLayout, cardActions = spec.cardActions, onAction = onCardAction)
+				}
+			}
+		}
+	}
+}
+
+/** A rich preview card (e.g. an email template): title, subtitle, snippet, badge + status. */
+@Composable
+private fun PreviewCard(
+	row: Map<String, String>,
+	layout: CardLayout,
+	cardActions: List<ScreenAction>,
+	onAction: (ScreenAction) -> Unit,
+) {
+	ElevatedCard(Modifier.fillMaxWidth()) {
+		Column(
+			Modifier.fillMaxWidth().padding(16.dp),
+			verticalArrangement = Arrangement.spacedBy(6.dp),
+		) {
+			Row(
+				Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.SpaceBetween,
+				verticalAlignment = Alignment.CenterVertically,
+			) {
+				Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+					layout.iconField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let {
+						Icon(iconFor(it), null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+						Spacer(Modifier.width(8.dp))
+					}
+					Text(
+						row[layout.titleField].orEmpty().ifEmpty { "—" },
+						style = MaterialTheme.typography.titleMedium,
+						fontWeight = FontWeight.SemiBold,
+						maxLines = 1,
+						overflow = TextOverflow.Ellipsis,
+					)
+				}
+				layout.statusField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let { StatusChip(it) }
+				if (cardActions.isNotEmpty()) {
+					RowActionsMenu(cardActions, { onAction(it.resolveFor(row)) })
+				}
+			}
+			layout.subtitleField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let {
+				Text(
+					it,
+					style = MaterialTheme.typography.bodyMedium,
+					fontWeight = FontWeight.Medium,
+				)
+			}
+			layout.previewField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let {
+				Text(
+					it,
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.onSurfaceVariant,
+					maxLines = 2,
+					overflow = TextOverflow.Ellipsis,
+				)
+			}
+			Row(
+				Modifier.fillMaxWidth(),
+				horizontalArrangement = Arrangement.SpaceBetween,
+				verticalAlignment = Alignment.CenterVertically,
+			) {
+				layout.badgeField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let { StatusChip(it) }
+				layout.metaField?.let { row[it] }?.takeIf { it.isNotBlank() }?.let {
+					Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				}
+			}
+		}
+	}
+}
+
+/** Parses a "#RRGGBB" or "#AARRGGBB" hex string into a Compose Color; null on failure. */
+private fun parseHexColor(hex: String): Color? = try {
+	val clean = hex.trim().removePrefix("#")
+	val value = clean.toLong(16)
+	when (clean.length) {
+		6 -> Color(0xFF000000 or value)
+		8 -> Color(value)
+		else -> null
+	}
+} catch (_: Exception) {
+	null
 }
 
 /* ---------------- LIST ---------------- */

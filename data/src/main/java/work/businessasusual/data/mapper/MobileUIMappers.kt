@@ -34,8 +34,46 @@ fun ScreenDto.toDomain(): ScreenSpec? = when (type) {
 	"chart" -> ChartScreenSpec(
 		title, charts.map { it.toDomain() }, emptyStateMessage,
 	)
+	"board" -> BoardScreenSpec(
+		title = title,
+		searchPlaceholder = searchPlaceholder,
+		enableSearch = enableSearch,
+		groupByField = groupByField,
+		columns = columns.map { it.toBoardColumn() },
+		cardLayout = cardLayout.toBoardCardLayout(),
+		actions = actions.map { it.toDomain() },
+		enableDragToMove = enableDragToMove,
+		moveEndpoint = moveEndpoint,
+		emptyStateMessage = emptyStateMessage,
+		fallbackColumns = fallbackColumns.map { it.toDomain() },
+	)
+	"card-collection" -> CardCollectionScreenSpec(
+		title = title,
+		searchPlaceholder = searchPlaceholder,
+		enableSearch = enableSearch,
+		enableFilter = enableFilter,
+		preferredColumns = preferredColumns,
+		cardLayout = cardLayout.toCardLayout(),
+		actions = actions.map { it.toDomain() },
+		cardActions = cardActions.map { it.toDomain() },
+		filters = filters.map { it.toDomain() },
+		emptyStateMessage = emptyStateMessage,
+		fallbackColumns = fallbackColumns.map { it.toDomain() },
+	)
 	else -> null
 }
+
+fun ColumnDefinitionDto.toBoardColumn() = BoardColumn(
+	id = id.ifBlank { name }, label = label, color = color, summaryLabel = summaryLabel,
+)
+fun CardLayoutDto.toBoardCardLayout() = BoardCardLayout(
+	titleField = titleField, subtitleField = subtitleField, valueField = valueField,
+	progressField = progressField, badgeField = badgeField, metaField = metaField,
+)
+fun CardLayoutDto.toCardLayout() = CardLayout(
+	titleField = titleField, subtitleField = subtitleField, previewField = previewField,
+	badgeField = badgeField, statusField = statusField, metaField = metaField, iconField = iconField,
+)
 
 fun ChartSpecDto.toDomain() = ChartSpec(
 	id = id, title = title, subtitle = subtitle, chartType = chartType,

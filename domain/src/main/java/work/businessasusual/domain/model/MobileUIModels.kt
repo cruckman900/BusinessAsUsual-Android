@@ -63,6 +63,62 @@ data class ListColumn(
 data class Filter(val id: String, val label: String, val type: String, val values: List<FilterValue>)
 data class FilterValue(val id: String, val label: String, val value: String)
 
+// ---- Board screen (kanban / grouped) ----
+data class BoardScreenSpec(
+	val title: String,
+	val searchPlaceholder: String,
+	val enableSearch: Boolean,
+	val groupByField: String,
+	val columns: List<BoardColumn>,
+	val cardLayout: BoardCardLayout,
+	val actions: List<ScreenAction>,
+	val enableDragToMove: Boolean,
+	val moveEndpoint: String?,
+	val emptyStateMessage: String,
+	val fallbackColumns: List<ListColumn>,
+) : ScreenSpec
+
+data class BoardColumn(
+	val id: String,
+	val label: String,
+	val color: String? = null,
+	val summaryLabel: String? = null,
+)
+
+data class BoardCardLayout(
+	val titleField: String = "",
+	val subtitleField: String? = null,
+	val valueField: String? = null,
+	val progressField: String? = null,
+	val badgeField: String? = null,
+	val metaField: String? = null,
+)
+
+// ---- Card collection screen (rich preview cards) ----
+data class CardCollectionScreenSpec(
+	val title: String,
+	val searchPlaceholder: String,
+	val enableSearch: Boolean,
+	val enableFilter: Boolean,
+	val preferredColumns: Int,
+	val cardLayout: CardLayout,
+	val actions: List<ScreenAction>,
+	val cardActions: List<ScreenAction>,
+	val filters: List<Filter>,
+	val emptyStateMessage: String,
+	val fallbackColumns: List<ListColumn>,
+) : ScreenSpec
+
+data class CardLayout(
+	val titleField: String = "",
+	val subtitleField: String? = null,
+	val previewField: String? = null,
+	val badgeField: String? = null,
+	val statusField: String? = null,
+	val metaField: String? = null,
+	val iconField: String? = null,
+)
+
 // ---- Timeline screen ----
 data class TimelineScreenSpec(
 	val title: String,
